@@ -1,0 +1,1834 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>fx-50FH Simulator</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap">
+</head>
+<body>
+<style>
+/* Layout: calculator body centred and sized to the viewport height for projection; keystroke log beside it (stacks below on narrow screens). */
+:root{
+  --bg:#e7eaee; --fg:#18202a; --muted:#566170; --panel:#ffffff; --line:#d3d9e0; --accent:#2f6fd6;
+  --body-a:#323c4c; --body-b:#1f2633; --bezel:#151b24;
+  --lcd-a:#cdd8bd; --lcd-b:#b9c6a6; --ink:#16200f;
+  --kfn:#3a4454; --kfn-t:#f4f6f8; --knum:#eef1f4; --knum-t:#131a22; --kdel:#e2733a; --kdel-t:#fff;
+  --kshift:#e9b43c; --kalpha:#d9534f;
+  --l-shift:#f2b03d; --l-alpha:#ff7b78; --l-blue:#6db3ff; --l-green:#7fdc78; --l-purple:#d0a2ff;
+  --font-ui:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --font-head:"Space Grotesk",Inter,system-ui,sans-serif;
+  --font-lcd:"Share Tech Mono",ui-monospace,"Cascadia Mono",Menlo,Consolas,monospace;
+  --zoom:1;
+  --w:min(calc(100vw - 32px), calc(54vh * var(--zoom)));
+  --u:calc(var(--w) / 100);
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#10141a;--fg:#e4e8ee;--muted:#9aa5b3;--panel:#181e27;--line:#2a3340;--accent:#7aa7ff;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#10141a;--fg:#e4e8ee;--muted:#9aa5b3;--panel:#181e27;--line:#2a3340;--accent:#7aa7ff;color-scheme:dark}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--font-ui);margin:0}
+.app{min-height:100%;display:flex;flex-wrap:wrap;gap:20px;justify-content:center;align-items:flex-start;padding-block:12px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+
+/* ---------- calculator body ---------- */
+.calc{width:var(--w);max-width:100%;background:linear-gradient(170deg,var(--body-a),var(--body-b));border-radius:calc(var(--u)*5) calc(var(--u)*5) calc(var(--u)*8) calc(var(--u)*8);padding:calc(var(--u)*4) calc(var(--u)*5) calc(var(--u)*6);box-shadow:0 10px 30px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.12);user-select:none;-webkit-user-select:none;touch-action:manipulation;flex:0 0 auto}
+.brand{display:flex;justify-content:space-between;align-items:baseline;color:#cfd6df;font-family:var(--font-head);margin-bottom:calc(var(--u)*2)}
+.brand b{font-size:calc(var(--u)*4.6);letter-spacing:.04em}
+.brand span{font-size:calc(var(--u)*2.6);letter-spacing:.12em;text-transform:uppercase;opacity:.75}
+.bezel{background:var(--bezel);border-radius:calc(var(--u)*2.4);padding:calc(var(--u)*2.6);box-shadow:inset 0 2px 6px rgba(0,0,0,.6)}
+.lcd{background:linear-gradient(180deg,var(--lcd-a),var(--lcd-b));border-radius:calc(var(--u)*1.2);padding:calc(var(--u)*1.2) calc(var(--u)*2) calc(var(--u)*1.4);color:var(--ink);font-family:var(--font-lcd);position:relative;overflow:hidden}
+.lcd.off .ink{visibility:hidden}
+.ind{display:flex;gap:calc(var(--u)*1.3);height:calc(var(--u)*3.4);font-size:calc(var(--u)*2.7);line-height:calc(var(--u)*3.4);font-family:var(--font-ui);font-weight:700;letter-spacing:.02em;white-space:nowrap}
+.ind i{font-style:normal;visibility:hidden}
+.ind i.on{visibility:visible}
+.ind .sp{flex:1}
+.ind i.md{font-size:calc(var(--u)*3.1);padding:0 calc(var(--u)*.8);border:calc(var(--u)*.3) solid currentColor;border-radius:calc(var(--u)*.6);line-height:calc(var(--u)*2.8)}
+.l1{position:relative;height:calc(var(--u)*8.6);font-size:calc(var(--u)*7.2);line-height:calc(var(--u)*8.6);white-space:nowrap;overflow:hidden;display:flex}
+.cell{display:inline-block;width:calc(var(--u)*5.1);text-align:center;flex:0 0 auto}
+.cur{position:absolute;top:calc(var(--u)*1);bottom:calc(var(--u)*1);width:calc(var(--u)*.7);background:var(--ink);animation:blink 1s steps(1) infinite}
+.cur.ov{top:auto;bottom:calc(var(--u)*.6);height:calc(var(--u)*.8);width:calc(var(--u)*5.1)}
+.cur.blk{top:calc(var(--u)*1);bottom:calc(var(--u)*1);width:calc(var(--u)*5.1);opacity:.55}
+@keyframes blink{50%{opacity:0}}
+@media (prefers-reduced-motion: reduce){.cur{animation:none}}
+.arrL,.arrR{position:absolute;top:calc(var(--u)*.2);font-size:calc(var(--u)*2.8);line-height:1;font-family:var(--font-ui)}
+.arrL{left:calc(var(--u)*-1.6)}.arrR{right:calc(var(--u)*-1.6)}
+.l2{height:calc(var(--u)*13.5);display:flex;justify-content:flex-end;align-items:flex-end;font-size:calc(var(--u)*11.5);line-height:1;white-space:nowrap;position:relative;gap:calc(var(--u)*1)}
+.l2 .lab{position:absolute;left:0;bottom:calc(var(--u)*1);font-size:calc(var(--u)*6.4)}
+.l2 .x10{font-size:calc(var(--u)*5.2);margin-left:calc(var(--u)*1);align-self:flex-end;margin-bottom:calc(var(--u)*.6)}
+.l2 sup{font-size:calc(var(--u)*5.6);align-self:flex-start;margin-top:calc(var(--u)*.6)}
+.l2 .bt{font-size:calc(var(--u)*5);align-self:flex-start;margin-top:calc(var(--u)*1)}
+.l2 .smalltxt{font-size:calc(var(--u)*6.6)}
+.menu{display:flex;justify-content:space-around;width:100%}
+.menu span{flex:1;text-align:center}
+.l2 .menu{font-size:calc(var(--u)*9)}
+.l1 .menu{font-size:calc(var(--u)*6)}
+.inv{background:var(--ink);color:var(--lcd-a);padding:0 calc(var(--u)*.4)}
+
+/* ---------- keys ---------- */
+.keys{margin-top:calc(var(--u)*2.6)}
+.toprow{display:grid;grid-template-columns:repeat(2,1fr) 1.6fr repeat(2,1fr);grid-template-rows:auto auto;column-gap:calc(var(--u)*2.4);row-gap:calc(var(--u)*1)}
+.pad{grid-column:3;grid-row:1 / span 2;position:relative;align-self:center;justify-self:center;width:calc(var(--u)*25);height:calc(var(--u)*19);border-radius:50%;background:radial-gradient(circle at 50% 40%,#566273,#2d3542);box-shadow:0 3px 0 #10151c,inset 0 1px 0 rgba(255,255,255,.2)}
+.pad button{position:absolute;background:transparent;border:0;color:#e9eef3;font-size:calc(var(--u)*4.2);cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:40%}
+.pad button:active,.pad button.pressed{background:rgba(255,255,255,.18)}
+.pad .pu{top:0;left:30%;width:40%;height:34%}
+.pad .pd{bottom:0;left:30%;width:40%;height:34%}
+.pad .pl{left:0;top:28%;width:32%;height:44%}
+.pad .pr{right:0;top:28%;width:32%;height:44%}
+.pad .rp{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:calc(var(--u)*2.3);letter-spacing:.1em;color:#b6c0cc;pointer-events:none;font-family:var(--font-ui);font-weight:600}
+.grid6{display:grid;grid-template-columns:repeat(6,1fr);column-gap:calc(var(--u)*2);row-gap:calc(var(--u)*.6);margin-top:calc(var(--u)*1.2)}
+.grid5{display:grid;grid-template-columns:repeat(5,1fr);column-gap:calc(var(--u)*2.6);row-gap:calc(var(--u)*.8)}
+.grid5.fn{column-gap:calc(var(--u)*2);margin-top:calc(var(--u)*1.2)}
+.grid5.num{margin-top:calc(var(--u)*2.2)}
+.kw{display:flex;flex-direction:column;align-items:stretch;min-width:0}
+.lt{display:flex;justify-content:space-between;align-items:flex-end;gap:2px;height:calc(var(--u)*3.8);font-size:calc(var(--u)*2.9);line-height:1.05;font-weight:600;white-space:nowrap;overflow:visible;padding:0 1px}
+.lt .s{color:var(--l-shift)}
+.lt .a{color:var(--l-alpha)}
+.lt .fr{border:1px solid currentColor;border-radius:2px;padding:0 1px;color:var(--l-shift)}
+.lt .fr.p{border-color:var(--l-purple)}
+.lt .fr.b{border-color:var(--l-blue)}
+.lb{height:calc(var(--u)*3);font-size:calc(var(--u)*2.7);line-height:calc(var(--u)*3);text-align:center;font-weight:700;white-space:nowrap}
+.lb .g{color:var(--l-green)} .lb .b{color:var(--l-blue)} .lb .p{color:var(--l-purple)}
+.k{font-family:var(--font-ui);border:0;border-radius:calc(var(--u)*1.6);cursor:pointer;font-weight:600;display:flex;align-items:center;justify-content:center;transition:transform .05s;position:relative}
+.k:focus-visible,.pad button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.k.f{height:calc(var(--u)*6.6);background:linear-gradient(#475264,var(--kfn));color:var(--kfn-t);font-size:calc(var(--u)*3.9);box-shadow:0 calc(var(--u)*.6) 0 #141a22}
+.k.n{height:calc(var(--u)*8.2);background:linear-gradient(#ffffff,var(--knum));color:var(--knum-t);font-size:calc(var(--u)*6);box-shadow:0 calc(var(--u)*.7) 0 #8c96a3}
+.k.n.op{font-size:calc(var(--u)*5.6)}
+.k.n.sm{font-size:calc(var(--u)*4.3)}
+.k.d{height:calc(var(--u)*8.2);background:linear-gradient(#f0884f,var(--kdel));color:var(--kdel-t);font-size:calc(var(--u)*4.2);box-shadow:0 calc(var(--u)*.7) 0 #8a3c16}
+.k.sh{background:linear-gradient(#f5cc66,var(--kshift));color:#2a2108;font-size:calc(var(--u)*3.3)}
+.k.al{background:linear-gradient(#ea6f6b,var(--kalpha));color:#fff;font-size:calc(var(--u)*3.3)}
+.k.tp{height:calc(var(--u)*6)}
+.k:active,.k.pressed{transform:translateY(calc(var(--u)*.5));box-shadow:0 calc(var(--u)*.15) 0 #141a22}
+.k.hit,.pad button.hit{outline:calc(var(--u)*.9) solid #ffd400;outline-offset:calc(var(--u)*.4);z-index:2}
+body.hidetips .tipcard{display:none}
+/* big pointer overlay */
+body.bigptr,body.bigptr *{cursor:none!important}
+#ptr{position:fixed;left:0;top:0;width:var(--ps,72px);height:var(--ps,72px);pointer-events:none;z-index:9999;transform:translate(-9999px,-9999px);filter:drop-shadow(0 2px 4px rgba(0,0,0,.5))}
+#ptr.down svg{transform:scale(.88);transform-origin:8% 6%}
+.ripple{position:fixed;width:var(--rs,110px);height:var(--rs,110px);margin:calc(var(--rs,110px)/-2) 0 0 calc(var(--rs,110px)/-2);border-radius:50%;border:6px solid #ffd400;pointer-events:none;z-index:9998;animation:rip .55s ease-out forwards}
+@keyframes rip{from{transform:scale(.25);opacity:1}to{transform:scale(1.4);opacity:0}}
+.callout{position:fixed;z-index:9999;pointer-events:none;background:#111823;color:#fff;border:3px solid #ffd400;border-radius:12px;padding:6px 16px;font:700 var(--cs,34px)/1.15 var(--font-ui);white-space:nowrap;box-shadow:0 6px 18px rgba(0,0,0,.45);transition:opacity .25s}
+.callout em{font-style:normal;color:#ffd400;font-weight:600;margin-left:8px}
+.callout sup{font-size:.6em;vertical-align:.6em;line-height:0}
+@media (prefers-reduced-motion: reduce){.ripple{animation-duration:.01s}}
+.ptrsel{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.ptrsel button{border:0;border-radius:0;border-right:1px solid var(--line)}
+.ptrsel button:last-child{border-right:0}
+.ptrsel button[aria-pressed="true"]{background:var(--accent);color:#fff}
+.prgtip{margin-top:10px;padding:10px 12px;border-radius:8px;background:var(--bg);border:1px solid var(--accent);font-size:16px;line-height:1.45}
+.k .kl{display:inline-block;line-height:1;white-space:nowrap}
+.k sup{font-size:.6em;vertical-align:.7em;line-height:0;margin-left:1px}
+.k sub{font-size:.6em;vertical-align:-.25em;line-height:0}
+.lt sup,.chip sup,.menu sup{font-size:.68em;vertical-align:.55em;line-height:0}
+.cell.sc{width:calc(var(--u)*3);text-align:left}
+.cell .sp{display:inline-block;font-size:.66em;transform:translateY(-.5em)}
+.calc.mode-base .lt .s,.calc.mode-base .lt .fr{opacity:.35}
+.lb span{opacity:.45}
+.calc.mode-base .lb .g,.calc.mode-stat .lb .b,.calc.mode-cmplx .lb .p{opacity:1;text-shadow:0 0 6px currentColor}
+.calc.st-shift .lt .s,.calc.st-shift .lt .fr{text-shadow:0 0 8px var(--l-shift);opacity:1}
+.calc.st-alpha .lt .a{text-shadow:0 0 8px var(--l-alpha)}
+.calc.st-shift .k.sh,.calc.st-alpha .k.al{outline:3px solid #fff;outline-offset:1px}
+
+/* ---------- side panel ---------- */
+.side{flex:1 1 320px;max-width:520px;min-width:0;display:flex;flex-direction:column;gap:14px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.side h1{font-family:var(--font-head);font-size:28px;margin:0 0 4px;text-wrap:balance}
+.side p{margin:0;color:var(--muted);font-size:17px;line-height:1.5}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.btn{font:600 16px var(--font-ui);padding:9px 14px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--fg);cursor:pointer}
+.btn:hover{border-color:var(--accent)}
+.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.h2{font:700 14px var(--font-ui);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 10px;display:flex;justify-content:space-between;align-items:center}
+.log{display:flex;flex-direction:column;gap:8px;max-height:50vh;overflow:auto;font-size:20px}
+.logline{display:flex;flex-wrap:wrap;gap:4px;align-items:center;padding-bottom:6px;border-bottom:1px dashed var(--line)}
+.chip{display:inline-flex;align-items:baseline;gap:4px;border:1px solid var(--line);border-bottom-width:3px;border-radius:7px;padding:3px 9px;font-weight:600;background:var(--bg)}
+.chip.sh{background:#e9b43c;color:#2a2108;border-color:#b98a1f}
+.chip.al{background:#d9534f;color:#fff;border-color:#a33}
+.chip em{font-style:normal;font-weight:500;color:var(--muted);font-size:16px}
+.empty{color:var(--muted);font-size:14px}
+.kbd{font-family:var(--font-lcd);background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:0 5px}
+.help{font-size:16px;color:var(--muted);line-height:1.6;display:grid;grid-template-columns:auto 1fr;gap:2px 10px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:16px;color:var(--muted)}
+.dot{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+@media (max-width:760px){ :root{--w:min(calc(100vw - 32px), 560px)} .log{max-height:none} }
+</style>
+
+<div class="app">
+  <div class="calc" id="calc" aria-label="Calculator">
+    <div class="brand"><b>fx-50FH</b><span>simulator</span></div>
+    <div class="bezel"><div class="lcd" id="lcd" role="status" aria-live="polite">
+      <div class="ink">
+        <div class="ind" id="ind"></div>
+        <div class="l1" id="l1"></div>
+        <div class="l2" id="l2"></div>
+      </div>
+    </div></div>
+    <div class="keys" id="keys"></div>
+  </div>
+
+  <div class="side">
+    <div class="card">
+      <h1>fx-50FH simulator</h1>
+      <p>Press keys on screen or use your keyboard. Every keystroke is logged below in the same notation as the user's guide, so the class can follow along.</p>
+      <div class="row" style="margin-top:12px">
+        <button class="btn" id="zoomOut" type="button" aria-label="Make calculator smaller">− Size</button>
+        <button class="btn" id="zoomIn" type="button" aria-label="Make calculator larger">+ Size</button>
+        <button class="btn" id="fsBtn" type="button">Full screen</button>
+        <button class="btn" id="resetBtn" type="button">Reset all</button>
+        <button class="btn" id="tipsBtn" type="button" aria-pressed="false">Hide tips</button>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <span style="font-weight:600;font-size:16px">Big pointer</span>
+        <span class="ptrsel" role="group" aria-label="Big pointer size">
+          <button class="btn" type="button" data-ptr="0" aria-pressed="true">Off</button>
+          <button class="btn" type="button" data-ptr="72" aria-pressed="false">Large</button>
+          <button class="btn" type="button" data-ptr="120" aria-pressed="false">Huge</button>
+        </span>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <span style="font-weight:600;font-size:16px">BASE binary width</span>
+        <span class="ptrsel" role="group" aria-label="Binary width in BASE mode">
+          <button class="btn" type="button" data-bw="10" aria-pressed="true">10-bit (fx-50FH)</button>
+          <button class="btn" type="button" data-bw="16" aria-pressed="false">16-bit</button>
+          <button class="btn" type="button" data-bw="32" aria-pressed="false">32-bit</button>
+        </span>
+      </div>
+      <div class="prgtip" id="prgTip" hidden>You are in Program mode. To leave it, press <b>MODE</b> then <b>1</b> (COMP), or press <b>AC</b> on the EDIT / RUN / DEL menu.</div>
+    </div>
+    <div class="card">
+      <div class="h2"><span>Keystrokes</span><button class="btn" id="clearLog" type="button">Clear</button></div>
+      <div class="log" id="log"><div class="empty">Keys you press appear here.</div></div>
+    </div>
+    <div class="card tipcard">
+      <div class="h2"><span>Label colours</span></div>
+      <div class="legend">
+        <span><i class="dot" style="background:#e9b43c"></i>SHIFT functions</span>
+        <span><i class="dot" style="background:#d9534f"></i>ALPHA variables</span>
+        <span><i class="dot" style="background:#6db3ff"></i>SD / REG</span>
+        <span><i class="dot" style="background:#7fdc78"></i>BASE</span>
+        <span><i class="dot" style="background:#d0a2ff"></i>CMPLX</span>
+      </div>
+    </div>
+    <div class="card tipcard">
+      <div class="h2"><span>Keyboard shortcuts</span></div>
+      <div class="help">
+        <span class="kbd">0–9 . + − * / ^ ( ) ,</span><span>same keys</span>
+        <span class="kbd">Enter</span><span>EXE</span>
+        <span class="kbd">Backspace</span><span>DEL</span>
+        <span class="kbd">Esc</span><span>AC</span>
+        <span class="kbd">Arrows</span><span>REPLAY pad</span>
+        <span class="kbd">s</span><span>SHIFT</span>
+        <span class="kbd">a</span><span>ALPHA</span>
+        <span class="kbd">m</span><span>MODE</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="ptr" aria-hidden="true"><svg viewBox="0 0 32 32" width="100%" height="100%"><path d="M3 2 L3 27 L9.5 21 L14 31 L18.5 29 L14 19.5 L23 19.5 Z" fill="#fff" stroke="#000" stroke-width="2" stroke-linejoin="round"/><path d="M3 2 L3 27 L9.5 21 L14 31 L18.5 29 L14 19.5 L23 19.5 Z" fill="none" stroke="#ffd400" stroke-width="0.8" stroke-linejoin="round" transform="translate(0.9 1.4) scale(.94)"/></svg></div>
+<script>
+'use strict';
+/* =====================================================================
+   fx-50FH behaviour model, built from the fx-50FH User's Guide (RCA503574-001V01)
+   ===================================================================== */
+
+// ---------- errors ----------
+const MATH='Math ERROR', SYN='Syntax ERROR', ARG='Arg ERROR', STACK='Stack ERROR', GO='Go ERROR', FULL='Data Full';
+function CErr(msg,pos){const e=new Error(msg);e.calc=msg;e.pos=pos;return e;}
+
+// ---------- numeric core (15-digit internal precision) ----------
+function r15(x){
+  if(typeof x!=='number'||!isFinite(x)) throw CErr(MATH);
+  if(x===0) return 0;
+  const a=Math.abs(x);
+  if(a>=1e100) throw CErr(MATH);
+  if(a<1e-99) return 0;
+  return Number(x.toPrecision(15));
+}
+const babs=b=>b<0n?-b:b;
+function bgcd(a,b){a=babs(a);b=babs(b);while(b){const t=a%b;a=b;b=t;}return a;}
+function mq(n,d){
+  if(d===0n) throw CErr(MATH);
+  if(d<0n){n=-n;d=-d;}
+  const g=bgcd(n,d); if(g>1n){n/=g;d/=g;}
+  if(babs(n)>10n**40n||d>10n**40n) return null;
+  return {n,d};
+}
+const qadd=(a,b)=>mq(a.n*b.d+b.n*a.d,a.d*b.d), qsub=(a,b)=>mq(a.n*b.d-b.n*a.d,a.d*b.d),
+      qmul=(a,b)=>mq(a.n*b.n,a.d*b.d), qdiv=(a,b)=>{if(b.n===0n) throw CErr(MATH);return mq(a.n*b.d,a.d*b.n);};
+const qnum=q=>Number(q.n)/Number(q.d);
+function V(re,im=0){return {re:r15(re),im:r15(im),q:null,f:false,dms:false};}
+function VQ(q,f){if(!q) return null;const v=V(qnum(q));v.q=q;v.f=!!f;return v;}
+const ZERO=()=>V(0);
+function vadd(a,b,sub){
+  let r=null;
+  if(a.q&&b.q) r=VQ(sub?qsub(a.q,b.q):qadd(a.q,b.q),a.f||b.f);
+  if(!r) r=V(sub?a.re-b.re:a.re+b.re,sub?a.im-b.im:a.im+b.im);
+  r.dms=a.dms&&b.dms; return r;
+}
+function vmul(a,b){
+  let r=null;
+  if(a.q&&b.q) r=VQ(qmul(a.q,b.q),a.f||b.f);
+  if(!r) r=V(a.re*b.re-a.im*b.im,a.re*b.im+a.im*b.re);
+  r.dms=a.dms!==b.dms; return r;
+}
+function vdiv(a,b){
+  if(b.re===0&&b.im===0) throw CErr(MATH);
+  let r=null;
+  if(a.q&&b.q) r=VQ(qdiv(a.q,b.q),a.f||b.f);
+  if(!r){const d=b.re*b.re+b.im*b.im;r=V((a.re*b.re+a.im*b.im)/d,(a.im*b.re-a.re*b.im)/d);}
+  r.dms=a.dms&&!b.dms; return r;
+}
+function vneg(a){const r=a.q?VQ(mq(-a.q.n,a.q.d),a.f):V(-a.re,-a.im);r.dms=a.dms;return r;}
+function R(a){if(a.im) throw CErr(MATH);return a.re;}
+function isInt(x){return Number.isInteger(x);}
+
+// ---------- angle helpers ----------
+const ANG={Deg:180,Rad:Math.PI,Gra:200};
+const toRad=(x,u)=>x*Math.PI/ANG[u||S.angle];
+const fromRad=(r,u)=>r*ANG[u||S.angle]/Math.PI;
+function trig(f,x){
+  const u=S.angle, lim=u==='Deg'?9e9:u==='Rad'?157079632.7:1e10;
+  if(Math.abs(x)>=lim) throw CErr(MATH);
+  const k=x/(ANG[u]/2), kr=Math.round(k);
+  if(Math.abs(k-kr)<1e-12){
+    const m=((kr%4)+4)%4;
+    if(f==='sin') return [0,1,0,-1][m];
+    if(f==='cos') return [1,0,-1,0][m];
+    if(m%2) throw CErr(MATH);
+    return 0;
+  }
+  const r=toRad(x);
+  return f==='sin'?Math.sin(r):f==='cos'?Math.cos(r):Math.tan(r);
+}
+
+// ---------- BASE-n helpers ----------
+const BW={BIN:10,OCT:30,DEC:32,HEX:32}, BR={BIN:2,OCT:8,DEC:10,HEX:16}, BTAG={DEC:'d',HEX:'H',BIN:'b',OCT:'o'};
+function parseIntBase(s,b){
+  const r=BR[b];let v=0n;
+  for(const c of s){const d=parseInt(c,16);if(isNaN(d)||d>=r) throw CErr(SYN);v=v*BigInt(r)+BigInt(d);}
+  if(b==='DEC'){if(v>2147483647n) throw CErr(MATH);return Number(v);}
+  const w=BigInt(BW[b]);
+  if(v>=(1n<<w)) throw CErr(MATH);
+  if(v>=(1n<<(w-1n))) v-=(1n<<w);
+  return Number(v);
+}
+function checkBase(v,b){b=b||S.base;const w=BW[b];if(!isFinite(v)||v<-(2**(w-1))||v>2**(w-1)-1) throw CErr(MATH);return v;}
+function fmtBase(v,b){if(b==='DEC') return String(v);const w=BW[b];const u=v<0?v+2**w:v;return u.toString(BR[b]).toUpperCase();}
+
+// ---------- scientific constants (page E-25, 2000 CODATA) ----------
+const CONSTS=[['mp',1.67262171e-27],['mn',1.67492728e-27],['me',9.1093826e-31],['mμ',1.8835314e-28],
+ ['a₀',0.5291772108e-10],['h',6.6260693e-34],['μN',5.05078343e-27],['μB',927.400949e-26],
+ ['ħ',1.05457168e-34],['α',7.297352568e-3],['re',2.817940325e-15],['λc',2.426310238e-12],
+ ['γp',2.67522205e8],['λcp',1.3214098555e-15],['λcn',1.3195909067e-15],['R∞',10973731.568525],
+ ['u',1.66053886e-27],['μp',1.41060671e-26],['μe',-928.476412e-26],['μn',-0.96623645e-26],
+ ['μμ',-4.49044799e-26],['F',96485.3383],['e',1.60217653e-19],['NA',6.0221415e23],
+ ['k',1.3806505e-23],['Vm',22.413996e-3],['R',8.314472],['C₀',299792458],
+ ['C₁',3.74177138e-16],['C₂',1.4387752e-2],['σ',5.670400e-8],['ε₀',8.854187817e-12],
+ ['μ₀',12.566370614e-7],['φ₀',2.06783372e-15],['g',9.80665],['G₀',7.748091733e-5],
+ ['Z₀',376.730313461],['t',273.15],['G',6.6742e-11],['atm',101325]];
+
+// ---------- tokens ----------
+const tk=(k,s,o)=>Object.assign({k,s},o||{});
+const FNL={sin:'sin(',cos:'cos(',tan:'tan(',asin:'sin⁻¹(',acos:'cos⁻¹(',atan:'tan⁻¹(',sinh:'sinh(',cosh:'cosh(',tanh:'tanh(',
+  asinh:'sinh⁻¹(',acosh:'cosh⁻¹(',atanh:'tanh⁻¹(',log:'log(',ln:'ln(',p10:'10^(',pe:'ℯ^(',sqrt:'√(',cbrt:'∛(',Abs:'Abs(',
+  Pol:'Pol(',Rec:'Rec(',arg:'arg(',Conjg:'Conjg(',Not:'Not(',Neg:'Neg(',Rnd:'Rnd('};
+const PSL={sq:'²',cube:'³',inv:'⁻¹',fact:'!',pct:'%',degU:'°',radU:'ʳ',graU:'ᵍ'};
+const STL={sx2:'Σx²',sx:'Σx',n:'n',mx:'x̄',sgx:'xσn',sgx1:'xσn-1',minX:'minX',maxX:'maxX',sy2:'Σy²',sy:'Σy',sxy:'Σxy',
+  sx2y:'Σx²y',sx3:'Σx³',sx4:'Σx⁴',my:'ȳ',sgy:'yσn',sgy1:'yσn-1',ra:'a',rb:'b',rc:'c',rr:'r',minY:'minY',maxY:'maxY'};
+const ESL={xh:'x̂',yh:'ŷ',xh1:'x̂₁',xh2:'x̂₂'};
+const KWL={Goto:'Goto ',Lbl:'Lbl ',If:'If ',Then:'Then ',Else:'Else ',IfEnd:'IfEnd',For:'For ',To:' To ',Step:' Step ',Next:'Next',
+  While:'While ',WhileEnd:'WhileEnd',Break:'Break'};
+const T={
+  num:c=>tk('num',c), E:()=>tk('E','ᴇ'), add:()=>tk('+','+'), sub:()=>tk('-','−'), mul:()=>tk('×','×'), div:()=>tk('÷','÷'),
+  neg:()=>tk('neg','-'), lp:()=>tk('(','('), rp:()=>tk(')',')'), comma:()=>tk(',',','),
+  fn:f=>tk('fn',FNL[f],{f}), post:f=>tk('post',PSL[f],{f}), pow:()=>tk('pow','^('), xrt:()=>tk('xrt','ˣ√('),
+  frac:()=>tk('frac','⌟'), dms:()=>tk('dms','°'), nPr:()=>tk('nPr','P'), nCr:()=>tk('nCr','C'), ang:()=>tk('ang','∠'),
+  v:n=>tk('var',n,{v:n}), ans:()=>tk('ans','Ans'), pi:()=>tk('const','π',{val:Math.PI}), e:()=>tk('const','ℯ',{val:Math.E}),
+  c:i=>tk('const',CONSTS[i][0],{val:CONSTS[i][1]}), ran:()=>tk('ran','Ran#'), i:()=>tk('i','i'),
+  st:f=>tk('stat',STL[f],{f}), est:f=>tk('est',ESL[f],{f}), conv:f=>tk('conv',f==='polar'?'▸r∠θ':'▸a+bi',{f}),
+  rel:op=>tk('rel',op,{op}), lop:op=>tk('lop',op,{op}), bp:b=>tk('bp',b,{b}), semi:()=>tk(';',';'),
+  kw:w=>tk('kw',KWL[w],{w}), cmd:(w,n)=>tk('cmd',n==null?w:w+' '+n,{w,n}),
+  q:()=>tk('?','?'), sto:()=>tk('→','→'), colon:()=>tk(':',':'), disp:()=>tk('◢','◢'), imp:()=>tk('⇒','⇒'),
+  DT:()=>tk('DT','DT'), Mp:()=>tk('M+','M+'), Mm:()=>tk('M-','M−')
+};
+const seg=(typeof Intl!=='undefined'&&Intl.Segmenter)?new Intl.Segmenter():null;
+const graphemes=s=>seg?Array.from(seg.segment(s),x=>x.segment):Array.from(s);
+const toksText=ts=>ts.map(t=>t.s).join('');
+
+// ---------- parser (priority sequence, page E-71) ----------
+function parse(toks,mode){
+  let i=0,depth=0;const n=toks.length;
+  const isK=k=>i<n&&toks[i].k===k;
+  const fail=p=>{throw CErr(SYN,p==null?i:p);};
+  const OPERAND=new Set(['(','fn','var','ans','const','ran','i','stat','bp']);
+  function closeP(){ if(isK(')')) i++; else if(i<n) fail(); depth--; }
+  function expr(){return pOr();}
+  function pOr(){let l=pAnd();while(isK('lop')&&toks[i].op!=='and'){const op=toks[i++].op;const r=pAnd();l={t:'lop',op,l,r,p:i};}return l;}
+  function pAnd(){let l=pRel();while(isK('lop')&&toks[i].op==='and'){i++;const r=pRel();l={t:'lop',op:'and',l,r,p:i};}return l;}
+  function pRel(){let l=pAdd();if(isK('rel')){const op=toks[i++].op;const r=pAdd();l={t:'rel',op,l,r,p:i};}return l;}
+  function pAdd(){let l=pMul();while(isK('+')||isK('-')){const op=toks[i++].k;const r=pMul();l={t:'bin',op,l,r,p:i};}return l;}
+  function pMul(){let l=pPerm();for(;;){
+    if(isK('×')||isK('÷')){const op=toks[i++].k;const r=pPerm();l={t:'bin',op,l,r,p:i};}
+    else if(i<n&&OPERAND.has(toks[i].k)){const r=pPerm();l={t:'bin',op:'×',l,r,p:i};}
+    else break;}return l;}
+  function pPerm(){let l=pEst();while(isK('nPr')||isK('nCr')||isK('ang')){const op=toks[i++].k;const r=pEst();l={t:'bin',op,l,r,p:i};}return l;}
+  function pEst(){let a=pPre();while(isK('est')){const f=toks[i++].f;a={t:'est',f,a,p:i};}return a;}
+  function pPre(){
+    if(isK('neg')||isK('-')){i++;const a=pPre();return {t:'neg',a,p:i};}
+    if(isK('bp')){const b={d:'DEC',h:'HEX',b:'BIN',o:'OCT'}[toks[i++].b];let s='';while(isK('num'))s+=toks[i++].s;if(!s)fail();return {t:'int',s,base:b,p:i};}
+    return pFrac();
+  }
+  function pFrac(){let a=pPost();if(isK('frac')){i++;const b=pPost();if(isK('frac')){i++;const c=pPost();return {t:'frac',parts:[a,b,c],p:i};}return {t:'frac',parts:[a,b],p:i};}return a;}
+  function pPost(){let a=pPrim();for(;;){
+    if(isK('post')){const f=toks[i++].f;a={t:'post',f,a,p:i};}
+    else if(isK('pow')||isK('xrt')){const k=toks[i++].k;if(++depth>24) throw CErr(STACK,i);const r=expr();closeP();a={t:k,l:a,r,p:i};}
+    else break;}return a;}
+  function pNum(){
+    if(mode==='BASE'){let s='';while(isK('num'))s+=toks[i++].s;if(!s)fail();return {t:'int',s,base:null,p:i};}
+    const st=i;let s='',dot=false;
+    while(isK('num')){const c=toks[i].s;if(c==='.'){if(dot)fail();dot=true;}else if(!/[0-9]/.test(c))fail();s+=c;i++;}
+    let ex=null;
+    if(isK('E')){i++;let ng=false;if(isK('neg')){ng=true;i++;}let es='';while(isK('num')&&/[0-9]/.test(toks[i].s))es+=toks[i++].s;if(!es)fail();ex=(ng?-1:1)*parseInt(es,10);}
+    if(s===''){if(ex===null)fail(st);s='1';}
+    if(s==='.')fail(st);
+    let val=parseFloat(s)*(ex===null?1:Math.pow(10,ex));
+    if(ex!==null) val=parseFloat(s+'e'+ex);
+    let v;
+    if(!dot&&(ex===null||(ex>=0&&ex<=99))){v=VQ(mq(BigInt(s)*(ex?10n**BigInt(ex):1n),1n),false)||V(val);}
+    else v=V(val);
+    if(isK('dms')){
+      i++;let d=v.re,m=0,sec=0;
+      const sub=()=>{let q='';while(isK('num')&&/[0-9.]/.test(toks[i].s))q+=toks[i++].s;if(q===''||q==='.')fail();return parseFloat(q);};
+      if(isK('num')){m=sub();if(isK('dms'))i++;if(isK('num')){sec=sub();if(isK('dms'))i++;}}
+      v=V(d+m/60+sec/3600);v.dms=true;
+    }
+    return {t:'num',v,p:i};
+  }
+  function pPrim(){
+    if(i>=n) fail();
+    const t=toks[i];
+    if(t.k==='num'||t.k==='E') return pNum();
+    if(t.k==='('){i++;if(++depth>24) throw CErr(STACK,i);const e=expr();closeP();return e;}
+    if(t.k==='fn'){i++;if(++depth>24) throw CErr(STACK,i);const args=[expr()];while(isK(',')){i++;args.push(expr());}closeP();return {t:'fn',f:t.f,args,p:i};}
+    if(['var','ans','const','ran','i','stat'].includes(t.k)){i++;return {t:'leaf',tok:t,p:i};}
+    fail();
+  }
+  const ast=expr();
+  if(i<n) fail();
+  return ast;
+}
+
+// ---------- evaluator ----------
+function evaluate(ast,mode){
+  const B=mode==='BASE',CX=mode==='CMPLX';
+  const bc=x=>V(checkBase(x));
+  function ev(nd){try{return ev0(nd);}catch(e){if(e.calc&&e.pos==null)e.pos=nd.p;throw e;}}
+  function ev0(nd){
+    switch(nd.t){
+      case 'num': return Object.assign({},nd.v);
+      case 'int': return bc(parseIntBase(nd.s,nd.base||S.base));
+      case 'leaf': return leaf(nd.tok);
+      case 'neg': {const a=ev(nd.a);return B?bc(-a.re):vneg(a);}
+      case 'bin': return bin(nd.op,ev(nd.l),ev(nd.r));
+      case 'post': return post(nd.f,ev(nd.a));
+      case 'pow': {if(B) throw CErr(SYN);return vpow(ev(nd.l),ev(nd.r));}
+      case 'xrt': {if(B) throw CErr(SYN);return xroot(ev(nd.l),ev(nd.r));}
+      case 'frac': {if(B) throw CErr(SYN);return fracNode(nd.parts.map(ev));}
+      case 'fn': return fn(nd.f,nd.args.map(ev));
+      case 'est': return V(estimate(nd.f,R(ev(nd.a))));
+      case 'rel': {const a=ev(nd.l),b=ev(nd.r);let r;
+        switch(nd.op){case '=':r=a.re===b.re&&a.im===b.im;break;case '≠':r=!(a.re===b.re&&a.im===b.im);break;
+          case '>':r=a.re>b.re;break;case '≥':r=a.re>=b.re;break;case '<':r=a.re<b.re;break;case '≤':r=a.re<=b.re;break;}
+        return V(r?1:0);}
+      case 'lop': {if(!B) throw CErr(SYN);const a=ev(nd.l).re|0,b=ev(nd.r).re|0;let r;
+        switch(nd.op){case 'and':r=a&b;break;case 'or':r=a|b;break;case 'xor':r=a^b;break;case 'xnor':r=~(a^b);break;}
+        return bc(r);}
+    }
+    throw CErr(SYN);
+  }
+  function leaf(t){
+    switch(t.k){
+      case 'var':{const v=S.vars[t.v]||ZERO();if(B) return bc(Math.trunc(v.re));const w=V(v.re,CX?v.im:0);if(v.q&&!CX){w.q=v.q;}return w;}
+      case 'ans':{if(B) return bc(Math.trunc(S.ans.re));const a=Object.assign({},S.ans);if(!CX)a.im=0;return a;}
+      case 'const': if(B) throw CErr(SYN); return V(t.val);
+      case 'ran': if(B) throw CErr(SYN); return V(Math.floor(Math.random()*1000)/1000);
+      case 'i': if(!CX) throw CErr(SYN); return V(0,1);
+      case 'stat': return V(statValue(t.f));
+    }
+  }
+  function bin(op,a,b){
+    if(B){
+      const x=a.re,y=b.re;
+      switch(op){case '+':return bc(x+y);case '-':return bc(x-y);case '×':return bc(x*y);
+        case '÷':if(y===0) throw CErr(MATH);return bc(Math.trunc(x/y));}
+      throw CErr(SYN);
+    }
+    switch(op){
+      case '+':return vadd(a,b,false);
+      case '-':return vadd(a,b,true);
+      case '×':return vmul(a,b);
+      case '÷':return vdiv(a,b);
+      case 'nPr':case 'nCr':{const nn=R(a),r=R(b);
+        if(!isInt(nn)||!isInt(r)||nn<0||r<0||r>nn||nn>=1e10) throw CErr(MATH);
+        let res=1;
+        if(op==='nPr'){for(let k=0;k<r;k++){res*=(nn-k);if(res>=1e100) throw CErr(MATH);}}
+        else{const rr=Math.min(r,nn-r);for(let k=1;k<=rr;k++){res=res*(nn-rr+k)/k;}res=Math.round(res);}
+        return V(res);}
+      case 'ang':{if(!CX) throw CErr(SYN);const r=R(a),th=R(b);const c=trig('cos',th),s=trig('sin',th);return V(r*c,r*s);}
+    }
+    throw CErr(SYN);
+  }
+  function post(f,a){
+    if(B) throw CErr(SYN);
+    switch(f){
+      case 'sq':return vmul(a,a);
+      case 'cube':return vmul(vmul(a,a),a);
+      case 'inv':return vdiv(VQ(mq(1n,1n),false),a);
+      case 'fact':{const x=R(a);if(!isInt(x)||x<0||x>69) throw CErr(MATH);let r=1n;for(let k=2n;k<=BigInt(x);k++)r*=k;const v=V(Number(r));return v;}
+      case 'pct':return vdiv(a,VQ(mq(100n,1n),false));
+      case 'degU':return V(fromRad(toRad(R(a),'Deg')));
+      case 'radU':return V(fromRad(toRad(R(a),'Rad')));
+      case 'graU':return V(fromRad(toRad(R(a),'Gra')));
+    }
+  }
+  function vpow(a,b){
+    if(a.im||b.im) throw CErr(MATH);
+    const x=a.re,y=b.re;
+    if(a.q&&b.q&&b.q.d===1n&&babs(b.q.n)<=200n){
+      const k=b.q.n;
+      if(a.q.n===0n&&k<=0n) throw CErr(MATH);
+      const nn=a.q.n**babs(k),dd=a.q.d**babs(k);
+      const q=k<0n?mq(dd,nn):mq(nn,dd);
+      if(q&&babs(q.n)<10n**30n&&q.d<10n**30n) return VQ(q,a.f||b.f);
+    }
+    if(x===0){if(y>0) return V(0);throw CErr(MATH);}
+    if(x<0){
+      if(isInt(y)) return V(Math.pow(x,y));
+      if(b.q&&b.q.d%2n===1n){const sg=(b.q.n%2n===0n)?1:-1;return V(sg*Math.pow(-x,y));}
+      throw CErr(MATH);
+    }
+    return V(Math.pow(x,y));
+  }
+  function xroot(mv,xv){
+    const m=R(mv),x=R(xv);
+    if(m===0) throw CErr(MATH);
+    if(x<0){if(isInt(m)&&Math.abs(m)%2===1) return V(-Math.pow(-x,1/m));throw CErr(MATH);}
+    return V(Math.pow(x,1/m));
+  }
+  function fracNode(p){
+    const allInt=p.every(v=>v.q&&v.q.d===1n&&!v.im);
+    if(p.length===2){
+      if(allInt){if(p[1].q.n===0n) throw CErr(MATH);return VQ(mq(p[0].q.n,p[1].q.n),true);}
+      return vdiv(p[0],p[1]);
+    }
+    if(allInt){if(p[2].q.n===0n) throw CErr(MATH);return VQ(qadd({n:p[0].q.n,d:1n},mq(p[1].q.n,p[2].q.n)),true);}
+    return vadd(p[0],vdiv(p[1],p[2]));
+  }
+  function fn(f,A){
+    const n=A.length;const one=()=>{if(n!==1) throw CErr(SYN);return A[0];};
+    if(B&&f!=='Not'&&f!=='Neg') throw CErr(SYN);
+    switch(f){
+      case 'sin':case 'cos':case 'tan': return V(trig(f,R(one())));
+      case 'asin':case 'acos':{const x=R(one());if(x<-1||x>1) throw CErr(MATH);return V(fromRad(f==='asin'?Math.asin(x):Math.acos(x)));}
+      case 'atan': return V(fromRad(Math.atan(R(one()))));
+      case 'sinh':case 'cosh':{const x=R(one());if(Math.abs(x)>230.2585092) throw CErr(MATH);return V(f==='sinh'?Math.sinh(x):Math.cosh(x));}
+      case 'tanh': return V(Math.tanh(R(one())));
+      case 'asinh': return V(Math.asinh(R(one())));
+      case 'acosh':{const x=R(one());if(x<1) throw CErr(MATH);return V(Math.acosh(x));}
+      case 'atanh':{const x=R(one());if(Math.abs(x)>=1) throw CErr(MATH);return V(Math.atanh(x));}
+      case 'log':{
+        if(n===1){const x=R(A[0]);if(x<=0) throw CErr(MATH);return V(Math.log10(x));}
+        if(n===2){const b=R(A[0]),x=R(A[1]);if(b<=0||b===1||x<=0) throw CErr(MATH);return V(Math.log(x)/Math.log(b));}
+        throw CErr(SYN);}
+      case 'ln':{const x=R(one());if(x<=0) throw CErr(MATH);return V(Math.log(x));}
+      case 'p10': {const a=one();if(a.q&&a.q.d===1n&&a.q.n>=0n&&a.q.n<=99n) return VQ(mq(10n**a.q.n,1n),false);return V(Math.pow(10,R(a)));}
+      case 'pe': return V(Math.exp(R(one())));
+      case 'sqrt':{const x=R(one());if(x<0) throw CErr(MATH);return V(Math.sqrt(x));}
+      case 'cbrt': return V(Math.cbrt(R(one())));
+      case 'Abs':{const a=one();if(a.im) return V(Math.hypot(a.re,a.im));if(a.q) return VQ(mq(babs(a.q.n),a.q.d),a.f);return V(Math.abs(a.re));}
+      case 'arg':{const a=one();if(!CX) throw CErr(SYN);if(a.re===0&&a.im===0) return V(0);return V(fromRad(Math.atan2(a.im,a.re)));}
+      case 'Conjg':{const a=one();if(!CX) throw CErr(SYN);return V(a.re,-a.im);}
+      case 'Pol':{if(n!==2||CX) throw CErr(SYN);const x=R(A[0]),y=R(A[1]);if(x===0&&y===0) throw CErr(MATH);
+        const r=V(Math.hypot(x,y)),th=V(fromRad(Math.atan2(y,x)));S.vars.X=r;S.vars.Y=th;return r;}
+      case 'Rec':{if(n!==2||CX) throw CErr(SYN);const r=R(A[0]),th=R(A[1]);
+        const x=V(r*trig('cos',th)),y=V(r*trig('sin',th));S.vars.X=x;S.vars.Y=y;return x;}
+      case 'Not': if(!B) throw CErr(SYN); return bc(~(one().re|0));
+      case 'Neg': if(!B) throw CErr(SYN); return bc(-one().re);
+      case 'Rnd': return V(rndDisp(R(one())));
+    }
+    throw CErr(SYN);
+  }
+  return ev(ast);
+}
+function rndDisp(x){
+  const d=S.disp;
+  if(x===0) return 0;
+  if(d.t==='Fix'){const p=Math.pow(10,d.n);return Math.round(x*p)/p;}
+  if(d.t==='Sci') return Number(x.toPrecision(d.n));
+  return Number(x.toPrecision(10));
+}
+
+// ---------- statistics (SD / REG) ----------
+function statData(){if(!S.stat.data.length) throw CErr(MATH);return S.stat.data;}
+function sumsT(tx,ty){
+  let n=0,sx=0,sy=0,sxx=0,syy=0,sxy=0;
+  for(const d of statData()){const X=tx(d.x),Y=ty(d.y),f=d.f;n+=f;sx+=f*X;sy+=f*Y;sxx+=f*X*X;syy+=f*Y*Y;sxy+=f*X*Y;}
+  return {n,sx,sy,sxx,syy,sxy};
+}
+const id=x=>x, lnp=x=>{if(x<=0) throw CErr(MATH);return Math.log(x);}, recip=x=>{if(x===0) throw CErr(MATH);return 1/x;};
+function regression(){
+  const t=S.stat.reg;
+  if(t==='Quad'){
+    let n=0,sx=0,sy=0,sx2=0,sx3=0,sx4=0,sxy=0,sx2y=0;
+    for(const d of statData()){const f=d.f,x=d.x,y=d.y;n+=f;sx+=f*x;sy+=f*y;sx2+=f*x*x;sx3+=f*x*x*x;sx4+=f*x*x*x*x;sxy+=f*x*y;sx2y+=f*x*x*y;}
+    const Sxx=sx2-sx*sx/n,Sxy=sxy-sx*sy/n,Sxx2=sx3-sx*sx2/n,Sx2x2=sx4-sx2*sx2/n,Sx2y=sx2y-sx2*sy/n;
+    const den=Sxx*Sx2x2-Sxx2*Sxx2;if(den===0) throw CErr(MATH);
+    const b=(Sxy*Sx2x2-Sx2y*Sxx2)/den,c=(Sx2y*Sxx-Sxy*Sxx2)/den,a=sy/n-b*sx/n-c*sx2/n;
+    return {a,b,c,yh:x=>a+b*x+c*x*x,
+      xh1:y=>{if(c===0) throw CErr(MATH);const D=b*b-4*c*(a-y);if(D<0) throw CErr(MATH);return (-b+Math.sqrt(D))/(2*c);},
+      xh2:y=>{if(c===0) throw CErr(MATH);const D=b*b-4*c*(a-y);if(D<0) throw CErr(MATH);return (-b-Math.sqrt(D))/(2*c);}};
+  }
+  const tx={Lin:id,Log:lnp,Exp:id,Pwr:lnp,Inv:recip,'AB-Exp':id}[t];
+  const ty={Lin:id,Log:id,Exp:lnp,Pwr:lnp,Inv:id,'AB-Exp':lnp}[t];
+  const s=sumsT(tx,ty);
+  const Sxx=s.n*s.sxx-s.sx*s.sx, Syy=s.n*s.syy-s.sy*s.sy, Sxy=s.n*s.sxy-s.sx*s.sy;
+  if(Sxx===0) throw CErr(MATH);
+  const B=Sxy/Sxx, A=(s.sy-B*s.sx)/s.n;
+  const r=(Sxx*Syy>0)?Sxy/Math.sqrt(Sxx*Syy):(()=>{throw CErr(MATH);});
+  let a,b;
+  switch(t){case 'Lin':case 'Log':case 'Inv':a=A;b=B;break;case 'Exp':case 'Pwr':a=Math.exp(A);b=B;break;case 'AB-Exp':a=Math.exp(A);b=Math.exp(B);break;}
+  const nz=v=>{if(v===0) throw CErr(MATH);return v;};
+  const xh={Lin:y=>(y-a)/nz(b),Log:y=>Math.exp((y-a)/nz(b)),Exp:y=>(lnp(y)-Math.log(a))/nz(b),Pwr:y=>Math.exp((lnp(y)-Math.log(a))/nz(b)),
+    Inv:y=>b/nz(y-a),'AB-Exp':y=>(lnp(y)-Math.log(a))/nz(Math.log(b))}[t];
+  const yh={Lin:x=>a+b*x,Log:x=>a+b*lnp(x),Exp:x=>a*Math.exp(b*x),Pwr:x=>{if(x<0&&!isInt(b)) throw CErr(MATH);return a*Math.pow(x,b);},
+    Inv:x=>a+b/nz(x),'AB-Exp':x=>a*Math.pow(b,x)}[t];
+  return {a,b,r,xh,yh};
+}
+function statValue(f){
+  const D=statData();
+  if(['ra','rb','rc','rr'].includes(f)){
+    if(effMode()!=='REG') throw CErr(SYN);
+    const g=regression();
+    if(f==='rr'){if(typeof g.r==='function') g.r();if(g.r===undefined) throw CErr(SYN);return g.r;}
+    if(f==='rc'){if(g.c===undefined) throw CErr(SYN);return g.c;}
+    return f==='ra'?g.a:g.b;
+  }
+  if(f==='minX') return Math.min(...D.map(d=>d.x));
+  if(f==='maxX') return Math.max(...D.map(d=>d.x));
+  if(f==='minY') return Math.min(...D.map(d=>d.y));
+  if(f==='maxY') return Math.max(...D.map(d=>d.y));
+  let n=0,sx=0,sy=0,sx2=0,sy2=0,sxy=0,sx3=0,sx4=0,sx2y=0;
+  for(const d of D){const w=d.f,x=d.x,y=d.y||0;n+=w;sx+=w*x;sy+=w*y;sx2+=w*x*x;sy2+=w*y*y;sxy+=w*x*y;sx3+=w*x**3;sx4+=w*x**4;sx2y+=w*x*x*y;}
+  switch(f){
+    case 'n':return n;case 'sx':return sx;case 'sx2':return sx2;case 'sy':return sy;case 'sy2':return sy2;case 'sxy':return sxy;
+    case 'sx3':return sx3;case 'sx4':return sx4;case 'sx2y':return sx2y;
+    case 'mx':return sx/n;case 'my':return sy/n;
+    case 'sgx':return Math.sqrt(Math.max(0,(sx2-sx*sx/n)/n));
+    case 'sgy':return Math.sqrt(Math.max(0,(sy2-sy*sy/n)/n));
+    case 'sgx1':if(n<=1) throw CErr(MATH);return Math.sqrt(Math.max(0,(sx2-sx*sx/n)/(n-1)));
+    case 'sgy1':if(n<=1) throw CErr(MATH);return Math.sqrt(Math.max(0,(sy2-sy*sy/n)/(n-1)));
+  }
+  throw CErr(SYN);
+}
+function estimate(f,v){
+  if(effMode()!=='REG') throw CErr(SYN);
+  const g=regression();
+  if(S.stat.reg==='Quad'){if(f==='yh') return g.yh(v);if(f==='xh1') return g.xh1(v);if(f==='xh2') return g.xh2(v);throw CErr(SYN);}
+  if(f==='xh') return g.xh(v);if(f==='yh') return g.yh(v);throw CErr(SYN);
+}
+
+// ---------- built-in formulas (pages E-58 to E-62) ----------
+const g0=9.80665;
+const dsin=x=>Math.sin(x*Math.PI/180), dcos=x=>Math.cos(x*Math.PI/180);
+const pos=(...a)=>{if(a.some(x=>!(x>0))) throw CErr(MATH);};
+function hastP(x){const t=1/(1+0.2316419*Math.abs(x));const phi=Math.exp(-x*x/2)/Math.sqrt(2*Math.PI);
+  const p=1-phi*t*(0.319381530+t*(-0.356563782+t*(1.781477937+t*(-1.821255978+t*1.330274429))));return x>=0?p:1-p;}
+const FMLAS=[
+ {nm:'QuadraticEq',vs:['a','b','c'],out:['x1','x2'],f:v=>{const {a,b,c}=v;const D=b*b-4*a*c;if(a===0||D<0) throw CErr(MATH);return [(-b+Math.sqrt(D))/(2*a),(-b-Math.sqrt(D))/(2*a)];}},
+ {nm:'CosineTheorem',vs:['b','c','θ'],out:['a'],f:v=>{pos(v.b,v.c);if(!(v.θ>0&&v.θ<180)) throw CErr(MATH);return [Math.sqrt(v.b*v.b+v.c*v.c-2*v.b*v.c*dcos(v.θ))];}},
+ {nm:'HeronFormula',vs:['a','b','c'],out:['S'],f:v=>{const {a,b,c}=v;if(!(a+b>c&&b+c>a&&c+a>b&&a>0&&b>0&&c>0)) throw CErr(MATH);const s=(a+b+c)/2;return [Math.sqrt(s*(s-a)*(s-b)*(s-c))];}},
+ {nm:'NormalDist P',vs:['x'],out:['P'],f:v=>[hastP(v.x)]},
+ {nm:'NormalDist Q',vs:['x'],out:['Q'],f:v=>[hastP(Math.abs(v.x))-0.5]},
+ {nm:"Coulomb'sLaw",vs:['Q','q','r'],out:['F'],f:v=>{pos(v.r);return [v.Q*v.q/(4*Math.PI*8.854187817e-12*v.r*v.r)];}},
+ {nm:'Resistance',vs:['ρ','ℓ','S'],out:['R'],f:v=>{pos(v.ρ,v.ℓ,v.S);return [v.ρ*v.ℓ/v.S];}},
+ {nm:'MagneticForce',vs:['I','B','ℓ','θ'],out:['F'],f:v=>{pos(v.ℓ);return [v.I*v.B*v.ℓ*dsin(v.θ)];}},
+ {nm:'RC Voltage',vs:['V','t','C','R'],out:['VR'],f:v=>{pos(v.C,v.R);if(v.t<0) throw CErr(MATH);return [v.V*Math.exp(-v.t/(v.C*v.R))];}},
+ {nm:'VoltageGain',vs:['E′','E'],out:['G'],f:v=>{if(v.E===0||!(v['E′']/v.E>0)) throw CErr(MATH);return [20*Math.log10(v['E′']/v.E)];}},
+ {nm:'LRC Series Z',vs:['R','f','L','C'],out:['Z'],f:v=>{pos(v.R,v.f,v.L,v.C);const w=2*Math.PI*v.f;return [Math.sqrt(v.R*v.R+(w*v.L-1/(w*v.C))**2)];}},
+ {nm:'LRC Parallel Z',vs:['R','f','L','C'],out:['Z'],f:v=>{pos(v.R,v.f,v.L,v.C);const w=2*Math.PI*v.f;return [1/Math.sqrt((1/v.R)**2+(w*v.C-1/(w*v.L))**2)];}},
+ {nm:'ElecOscFreq',vs:['L','C'],out:['f1'],f:v=>{pos(v.L,v.C);return [1/(2*Math.PI*Math.sqrt(v.L*v.C))];}},
+ {nm:'DistanceOfDrop',vs:['v1','t'],out:['S'],f:v=>{if(v.t<0) throw CErr(MATH);return [v.v1*v.t+0.5*g0*v.t*v.t];}},
+ {nm:'SimplePendulum',vs:['ℓ'],out:['T'],f:v=>{pos(v.ℓ);return [2*Math.PI*Math.sqrt(v.ℓ/g0)];}},
+ {nm:'SpringPendulum',vs:['m','k'],out:['T'],f:v=>{pos(v.m,v.k);return [2*Math.PI*Math.sqrt(v.m/v.k)];}},
+ {nm:'DopplerEffect',vs:['f1','v','v1','u'],out:['f'],f:v=>{if(v.v===v.v1||!(v.f1>0)||!((v.v-v.u)/(v.v-v.v1)>0)) throw CErr(MATH);return [v.f1*(v.v-v.u)/(v.v-v.v1)];}},
+ {nm:'IdealGas',vs:['n','T','V'],out:['P'],f:v=>{pos(v.n,v.T,v.V);return [v.n*8.314472*v.T/v.V];}},
+ {nm:'CentrifugalF',vs:['m','v','r'],out:['F'],f:v=>{pos(v.m,v.v,v.r);return [v.m*v.v*v.v/v.r];}},
+ {nm:'ElasticEnergy',vs:['K','x'],out:['U'],f:v=>{pos(v.K,v.x);return [0.5*v.K*v.x*v.x];}},
+ {nm:"Bernoulli'sThm",vs:['v','P','ρ','z'],out:['C'],f:v=>{pos(v.v,v.P,v.ρ,v.z);return [0.5*v.v*v.v+v.P/v.ρ+g0*v.z];}},
+ {nm:'Stadia Height',vs:['ℓ','K','C','θ'],out:['h'],f:v=>{pos(v.ℓ);if(!(v.θ>0&&v.θ<=90)) throw CErr(MATH);return [0.5*v.K*v.ℓ*dsin(2*v.θ)+v.C*dsin(v.θ)];}},
+ {nm:'Stadia Dist',vs:['ℓ','K','C','θ'],out:['S'],f:v=>{pos(v.ℓ);if(!(v.θ>0&&v.θ<=90)) throw CErr(MATH);return [v.K*v.ℓ*dcos(v.θ)**2+v.C*dcos(v.θ)];}}
+];
+
+// ---------- calculator state ----------
+const S={};
+function initVars(){S.vars={A:ZERO(),B:ZERO(),C:ZERO(),D:ZERO(),X:ZERO(),Y:ZERO(),M:ZERO()};S.ans=ZERO();}
+function resetSetup(){Object.assign(S,{mode:'COMP',angle:'Deg',disp:{t:'Norm',n:1},fracFmt:'abc',cplxFmt:'rect',freq:true,insert:true,base:'DEC'});S.stat={data:[],reg:'Lin'};}
+function resetAll(){
+  resetSetup();initVars();
+  Object.assign(S,{on:true,contrast:5,toks:[],cur:0,scroll:0,screen:'input',ctx:'calc',view:null,resTop:'',lastToks:null,
+    lastBottom:'0',hist:[],hidx:-1,shift:false,alpha:false,alphaOnce:false,pend:null,hyp:null,menu:null,err:null,prompt:null,msg:null,
+    sv:null,fv:{},fm:null,progs:[null,null,null,null],pe:null,ps:null,run:null,lineNo:0,fnAns:false});
+}
+resetAll();
+function effMode(){
+  if(S.run) return S.run.mode;
+  if(S.ctx==='prg'&&S.pe) return S.progs[S.pe.idx].mode;
+  if(S.mode==='PRGM') return 'COMP';
+  return S.mode;
+}
+const progBytes=()=>S.progs.reduce((a,p)=>a+(p?p.toks.length:0),0);
+
+// ---------- number formatting ----------
+function sciFmt(x,digits,trim){
+  let e=Math.floor(Math.log10(Math.abs(x)));
+  let ms=(x/Math.pow(10,e)).toFixed(digits-1);
+  if(Math.abs(parseFloat(ms))>=10){e++;ms=(x/Math.pow(10,e)).toFixed(digits-1);}
+  if(Math.abs(parseFloat(ms))<1&&parseFloat(ms)!==0){e--;ms=(x/Math.pow(10,e)).toFixed(digits-1);}
+  if(trim&&ms.includes('.')) ms=ms.replace(/0+$/,'').replace(/\.$/,'');
+  return {m:ms,e};
+}
+function plainFmt(x,maxDigits){
+  const ax=Math.abs(x);
+  const k=ax>=1?Math.floor(Math.log10(ax))+1:1;
+  let s=x.toFixed(Math.max(0,Math.min(20,maxDigits-k)));
+  if(s.includes('.')) s=s.replace(/0+$/,'').replace(/\.$/,'');
+  if(s==='-0') s='0';
+  return s;
+}
+function fmtNum(x){
+  const d=S.disp;
+  if(x===0){if(d.t==='Fix') return {m:(0).toFixed(d.n)};if(d.t==='Sci') return {m:(0).toFixed(d.n-1),e:0};return {m:'0'};}
+  const ax=Math.abs(x);
+  if(d.t==='Sci') return sciFmt(x,d.n,false);
+  if(d.t==='Fix'){if(ax>=1e10) return sciFmt(x,10,true);const s=x.toFixed(d.n);if(s.replace(/[-.]/g,'').length>10&&ax>=1) return sciFmt(x,10,true);return {m:s};}
+  const lo=d.n===1?1e-2:1e-9;
+  if(ax<lo||ax>=1e10) return sciFmt(x,10,true);
+  const s=plainFmt(x,10);
+  if(Math.abs(parseFloat(s))>=1e10) return sciFmt(x,10,true);
+  return {m:s};
+}
+function engFmt(x,E){
+  if(x===0) return {m:'0',e:E};
+  const m=x/Math.pow(10,E);
+  return {m:plainFmt(r15(m),10),e:E};
+}
+function expStr(e){return (e<0?'-':'')+String(Math.abs(e)).padStart(2,'0');}
+function numHTML(o){return `<span>${esc(o.m)}</span>`+(o.e!=null?`<span class="x10">×10</span><sup>${expStr(o.e)}</sup>`:'');}
+function fracStr(q,improper){
+  if(!q) return null;
+  let n=q.n,d=q.d;const neg=n<0n;if(neg)n=-n;
+  let s;
+  if(d===1n) s=n.toString();
+  else if(!improper&&n>d){const a=n/d,r=n%d;s=`${a}⌟${r}⌟${d}`;}
+  else s=`${n}⌟${d}`;
+  if(s.length>10) return null;
+  return (neg?'-':'')+s;
+}
+function approxFrac(x){
+  if(!isFinite(x)) return null;
+  const neg=x<0;x=Math.abs(x);
+  let h1=1,h0=0,k1=0,k0=1,b=x;
+  for(let it=0;it<40;it++){
+    const a=Math.floor(b);const h2=a*h1+h0,k2=a*k1+k0;h0=h1;h1=h2;k0=k1;k1=k2;
+    if(k1>1e10||h1>1e10) return null;
+    if(Math.abs(h1/k1-x)<=1e-10*Math.max(1,x)){const q=mq(BigInt(neg?-h1:h1),BigInt(k1));return q;}
+    const fr=b-a;if(fr<1e-15) break;b=1/fr;
+  }
+  return null;
+}
+function dmsStr(x){
+  const neg=x<0;const a=Math.abs(x);if(a>=1e7) return null;
+  let d=Math.floor(a);let mf=(a-d)*60;let m=Math.floor(mf+1e-9);let s=(mf-m)*60;if(s<0)s=0;
+  const room=Math.max(0,10-String(d).length-String(m).length-2);
+  s=Number(s.toFixed(Math.min(room,6)));
+  if(s>=60){s-=60;m++;} if(m>=60){m-=60;d++;}
+  let ss=String(s);
+  return (neg?'-':'')+`${d}°${m}°${ss}`;
+}
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+
+function makeView(val,mode,conv){
+  const vw={val,mode,kind:'norm',eng:null,improper:S.fracFmt==='dc',part:0,polar:S.cplxFmt==='polar',base:S.base,q:null};
+  if(conv) vw.polar=conv==='polar';
+  if(mode!=='BASE'&&mode!=='CMPLX'){
+    if(val.dms) vw.kind='dms';
+    else if(val.q&&val.f&&fracStr(val.q,vw.improper)) vw.kind='frac';
+  }
+  return vw;
+}
+function fmtView(vw){
+  const v=vw.val,inds=[];
+  if(vw.mode==='BASE') return {html:`<span>${esc(fmtBase(v.re,vw.base))}</span><span class="bt">${BTAG[vw.base]}</span>`,inds};
+  if(vw.mode==='CMPLX'&&(v.im!==0||vw.forced)){
+    inds.push('RI');let x;
+    if(vw.polar){const r=Math.hypot(v.re,v.im),th=(v.re===0&&v.im===0)?0:fromRad(Math.atan2(v.im,v.re));x=vw.part?th:r;if(vw.part) inds.push('ANG');}
+    else{x=vw.part?v.im:v.re;if(vw.part) inds.push('I');}
+    return {html:numHTML(fmtNum(r15(x))),inds};
+  }
+  if(vw.kind==='frac'){const s=fracStr(vw.q||v.q,vw.improper);if(s) return {html:`<span>${esc(s)}</span>`,inds};}
+  if(vw.kind==='dms'){const s=dmsStr(v.re);if(s) return {html:`<span>${esc(s)}</span>`,inds};}
+  if(vw.kind==='eng'){inds.push('ENG');return {html:numHTML(engFmt(v.re,vw.eng)),inds};}
+  return {html:numHTML(fmtNum(v.re)),inds};
+}
+
+// ---------- evaluation entry ----------
+function evalToks(toks,mode){
+  let conv=null;
+  if(toks.length&&toks[toks.length-1].k==='conv'){conv=toks[toks.length-1].f;toks=toks.slice(0,-1);if(mode!=='CMPLX') throw CErr(SYN,toks.length);}
+  if(!toks.length) throw CErr(SYN,0);
+  const val=evaluate(parse(toks,mode),mode);
+  if(mode==='BASE') checkBase(val.re);
+  return {val,conv};
+}
+function setAns(v,mode){S.ans=Object.assign({},v);if(mode==='BASE'){S.ans=V(Math.trunc(v.re));}}
+
+/* =====================================================================
+   Key handling
+   ===================================================================== */
+const ANSPRE=new Set(['+','-','×','÷','post','pow','xrt','nPr','nCr','est','lop','rel']);
+const VARKEY={NEG:'A',DMS:'B',HYP:'C',SIN:'D',RP:'X',COMMA:'Y',MPLUS:'M'};
+const DIG={D0:'0',D1:'1',D2:'2',D3:'3',D4:'4',D5:'5',D6:'6',D7:'7',D8:'8',D9:'9'};
+
+function press(id){
+  const sh=S.shift, al=S.alpha||S.alphaOnce;
+  logKey(id,sh,al);
+  if(!S.on){if(id==='ON'){S.on=true;S.screen='input';S.toks=[];S.cur=0;S.ctx='calc';S.lastBottom='0';}render();return;}
+  if(id==='SHIFT'){S.shift=!sh;S.alpha=false;S.alphaOnce=false;render();return;}
+  if(id==='ALPHA'){S.alpha=!S.alpha;S.shift=false;render();return;}
+  S.shift=false;S.alpha=false;S.alphaOnce=false;
+  if(id==='ON'){if(S.run){S.run=null;}S.hist=[];S.toks=[];S.cur=0;S.screen='input';S.ctx='calc';S.menu=null;S.pend=null;S.lastBottom='0';if(S.mode==='PRGM'){openPrgMenu();}render();return;}
+  if(sh&&id==='AC'){S.on=false;S.run=null;S.screen='input';S.ctx='calc';S.toks=[];render();return;}
+  try{dispatch(id,sh,al);}
+  catch(e){if(e.calc){showError(e.calc,e.pos,e.toks);}else{console.error(e);}}
+  render();
+}
+
+function dispatch(id,sh,al){
+  switch(S.screen){
+    case 'menu': return menuKey(id,sh);
+    case 'prompt': return promptKey(id);
+    case 'msg': S.screen='input';S.ctx='calc';S.toks=[];S.cur=0;S.lastBottom='0';if(S.mode==='PRGM') openPrgMenu();return;
+    case 'contrast': return contrastKey(id);
+    case 'fmlasel': return fmlaSelKey(id);
+    case 'fmlares': return fmlaResKey(id,sh,al);
+    case 'prgsel': return prgSelKey(id);
+    case 'runpause': if(id==='EXE'&&!sh){S.screen='running';stepRun();} else if(id==='AC') abortRun(); return;
+    case 'running': if(id==='AC') abortRun(); return;
+    case 'error': return errKey(id,sh,al);
+    case 'hist': return histKey(id,sh,al);
+    case 'line': S.screen='input';S.toks=[];S.cur=0;return editorKey(id,sh,al);
+  }
+  if(S.mode==='PRGM'&&S.ctx==='calc'&&S.screen==='input'&&!S.run){
+    if(id==='MODE'&&!sh) return modeMenu();
+    if(id==='MODE'&&sh) return setupMenu();
+    if(id==='PROG'&&!sh) return runMenu();
+    openPrgMenu();return;
+  }
+  return editorKey(id,sh,al);
+}
+
+function showError(msg,pos,toks){
+  S.err={msg,pos:pos==null?0:pos,toks:toks||S.errToks||S.toks.slice(),prog:S.errProg};
+  if(!S.run&&(S.ctx==='fmla'||S.ctx==='stat')){S.err.ctx=S.ctx;S.err.screenBack=S.screen;}
+  S.errProg=null;S.errToks=null;
+  if(S.run){S.err.prog=S.run.n;S.err.pos=pos;S.run=null;}
+  S.screen='error';
+}
+function errKey(id){
+  const E=S.err;
+  if(id==='LEFT'||id==='RIGHT'){
+    if(E.prog!=null){S.mode='PRGM';openEditor(E.prog,Math.min(E.pos||0,S.progs[E.prog].toks.length));return;}
+    if(E.ctx){S.ctx=E.ctx;}
+    S.toks=E.toks.slice();S.cur=Math.min(E.pos,S.toks.length);S.screen=E.screenBack||'input';S.scroll=0;return;
+  }
+  if(id==='AC'){
+    if(E.prog!=null){S.ctx='calc';S.toks=[];S.cur=0;S.screen='input';S.lastBottom='0';return;}
+    if(E.screenBack&&E.screenBack!=='input'){S.screen=E.screenBack;S.toks=[];S.cur=0;return;}
+    S.toks=[];S.cur=0;S.screen='input';S.lastBottom='0';
+  }
+}
+
+// ---------- editor ----------
+function startFresh(first){
+  if(S.ctx!=='calc') return;
+  if(S.screen==='result'||S.screen==='input'&&false){}
+  if(S.screen==='result'){
+    const useAns=first&&ANSPRE.has(first.k);
+    S.toks=useAns?[T.ans()]:[];S.cur=S.toks.length;S.scroll=0;S.screen='input';S.fnAns=true;
+  }
+}
+function insertToks(arr){
+  if(!arr||!arr.length) return;
+  startFresh(arr[0]);
+  if(S.ctx==='prg'){if(progBytes()+arr.length>680) return;}
+  else if(S.toks.length+arr.length>99) return;
+  if(S.insert||S.cur>=S.toks.length) S.toks.splice(S.cur,0,...arr);
+  else S.toks.splice(S.cur,Math.min(arr.length,S.toks.length-S.cur),...arr);
+  S.cur+=arr.length;
+}
+function varKey(id){return VARKEY[id]||null;}
+
+function keyAction(id,sh,al,m){
+  const B=m==='BASE',CX=m==='CMPLX',ST=m==='SD'||m==='REG',P=S.ctx==='prg';
+  if(al){
+    if(VARKEY[id]) return {ins:[T.v(VARKEY[id])]};
+    if(id==='LN'&&!B) return {ins:[T.e()]};
+    return null;
+  }
+  if(B&&!sh){
+    if(id==='NEG'&&S.base!=='HEX') return {ins:[T.neg()]};
+    const hex={NEG:'A',DMS:'B',HYP:'C',SIN:'D',COS:'E',TAN:'F'};
+    if(hex[id]) return {ins:[T.num(hex[id])]};
+    const bases={SQR:'DEC',POW:'HEX',LOG:'BIN',LN:'OCT'};
+    if(bases[id]) return {act:'base',b:bases[id]};
+    if(id==='INV') return {act:'logic'};
+  }
+  if(B){ // functions not available in BASE mode
+    if(['SQRT','SQR','POW','LOG','LN','NEG','DMS','HYP','SIN','COS','TAN','INV','FRAC','ENG','EXP','DOT'].includes(id)) return null;
+    if(sh&&['ADD','SUB','MUL','DIV','LP','RP','COMMA','D7','D0','ANS'].includes(id)) return null;
+  }
+  if(DIG[id]){
+    if(!sh) return {ins:[T.num(DIG[id])]};
+    switch(id){
+      case 'D0': return B?null:{ins:[T.fn('Rnd')]};
+      case 'D1': return ST?{act:'ssum'}:null;
+      case 'D2': return ST?{act:'svar'}:null;
+      case 'D3': return P?{act:'pcmd'}:null;
+      case 'D7': return B?null:{act:'const'};
+      case 'D9': return {act:'clr'};
+    }
+    return null;
+  }
+  switch(id){
+    case 'DOT': return sh?{ins:[T.ran()]}:{ins:[T.num('.')]};
+    case 'EXP': return sh?{ins:[T.pi()]}:{ins:[T.E()]};
+    case 'ADD': return sh?(CX?{ins:[T.conv('polar')]}:{ins:[T.fn('Pol')]}):{ins:[T.add()]};
+    case 'SUB': return sh?(CX?{ins:[T.conv('rect')]}:{ins:[T.fn('Rec')]}):{ins:[T.sub()]};
+    case 'MUL': return sh?{ins:[T.nPr()]}:{ins:[T.mul()]};
+    case 'DIV': return sh?{ins:[T.nCr()]}:{ins:[T.div()]};
+    case 'LP': return sh?(CX?{ins:[T.fn('arg')]}:{ins:[T.post('pct')]}):{ins:[T.lp()]};
+    case 'RP': return sh?{ins:[T.fn('Abs')]}:{ins:[T.rp()]};
+    case 'COMMA': return sh?(ST?{ins:[T.semi()]}:CX?{ins:[T.fn('Conjg')]}:null):{ins:[T.comma()]};
+    case 'NEG': return sh?(CX?{ins:[T.ang()]}:null):{ins:[T.neg()]};
+    case 'DMS': return sh?{act:'dmsLeft'}:{act:'dms'};
+    case 'HYP': S.hyp=sh?'hi':'h';return {act:'none'};
+    case 'SIN': return {ins:[T.fn(sh?'asin':'sin')]};
+    case 'COS': return {ins:[T.fn(sh?'acos':'cos')]};
+    case 'TAN': return {ins:[T.fn(sh?'atan':'tan')]};
+    case 'SQRT': return {ins:[T.fn(sh?'cbrt':'sqrt')]};
+    case 'SQR': return {ins:[T.post(sh?'cube':'sq')]};
+    case 'POW': return {ins:[sh?T.xrt():T.pow()]};
+    case 'LOG': return {ins:[T.fn(sh?'p10':'log')]};
+    case 'LN': return {ins:[T.fn(sh?'pe':'ln')]};
+    case 'INV': return {ins:[T.post(sh?'fact':'inv')]};
+    case 'FRAC': return sh?{act:'dc'}:{act:'frac'};
+    case 'ENG': return (CX&&!sh)?{ins:[T.i()]}:{act:sh?'engL':'engR'};
+    case 'ANS': return sh?{act:'drg'}:{ins:[T.ans()]};
+    case 'RCL': return sh?{act:'sto'}:{act:'rcl'};
+    case 'MPLUS': if(ST) return sh?{act:'CL'}:{act:'DT'}; return sh?{act:'mminus'}:{act:'mplus'};
+  }
+  return null;
+}
+
+function editorKey(id,sh,al){
+  const m=effMode(),ctx=S.ctx;
+  // pending STO / RCL: next key names a variable
+  if(S.pend){const v=varKey(id);const p=S.pend;S.pend=null;if(v){if(p==='sto') doSto(v);else doRcl(v);}return;}
+  // pending hyp
+  if(S.hyp){const h=S.hyp;S.hyp=null;if(['SIN','COS','TAN'].includes(id)&&!al){const base={SIN:'sinh',COS:'cosh',TAN:'tanh'}[id];insertToks([T.fn(h==='hi'?'a'+base:base)]);return;}}
+  switch(id){
+    case 'AC': return acKey();
+    case 'DEL':
+      if(sh){S.insert=!S.insert;return;}
+      if(S.screen==='result') return;
+      if(S.insert){if(S.cur>0){S.toks.splice(S.cur-1,1);S.cur--;}}
+      else{if(S.cur<S.toks.length) S.toks.splice(S.cur,1);else if(S.cur>0){S.toks.splice(S.cur-1,1);S.cur--;}}
+      return;
+    case 'LEFT': case 'RIGHT': return navLR(id);
+    case 'UP': case 'DOWN': return navUD(id);
+    case 'EXE': if(sh) return reIm(); return exeKey();
+    case 'MODE':
+      if(ctx==='prg'){if(sh) setupMenu(true);else{S.pe=null;S.ctx='calc';S.toks=[];S.cur=0;S.screen='input';modeMenu();}return;}
+      if(ctx!=='calc') return;
+      return sh?setupMenu():modeMenu();
+    case 'FMLA': if(ctx==='calc'&&m==='COMP'&&!sh) fmlaStart(); return;
+    case 'PROG':
+      if(ctx==='prg'){if(sh) exitEditor();else pcmdMenu();return;}
+      if(ctx==='calc'&&!sh) runMenu();
+      return;
+  }
+  // program editor specials
+  if(ctx==='prg'){
+    if(sh&&id==='RCL'){insertToks([T.sto()]);S.alphaOnce=true;return;}
+    if(id==='RCL'&&!sh) return;
+    if(id==='MPLUS'&&!al){const ST=m==='SD'||m==='REG';if(ST){if(!sh) insertToks([T.DT()]);}else insertToks([sh?T.Mm():T.Mp()]);return;}
+    if(m==='BASE'&&!sh&&!al){const bases={SQR:'Dec',POW:'Hex',LOG:'Bin',LN:'Oct'};if(bases[id]){insertToks([T.cmd(bases[id])]);return;}}
+  }
+  const a=keyAction(id,sh,al,m);
+  if(!a) return;
+  if(a.ins){insertToks(a.ins);return;}
+  doAct(a,m);
+}
+
+function acKey(){
+  switch(S.ctx){
+    case 'prg': return exitEditor();
+    case 'fmla': S.ctx='calc';S.toks=[];S.cur=0;S.screen='input';S.fm=null;S.lastBottom='0';return;
+    case 'stat': S.ctx='calc';S.toks=[];S.cur=0;S.screen='input';S.sv=null;S.lastBottom='0';return;
+    case 'run': abortRun();return;
+  }
+  S.toks=[];S.cur=0;S.scroll=0;S.screen='input';S.lastBottom='0';S.fnAns=false;
+}
+function navLR(id){
+  if(S.ctx==='calc'&&S.screen==='result'){
+    if(!S.lastToks) return;
+    S.toks=S.lastToks.slice();S.cur=id==='LEFT'?S.toks.length:0;S.screen='input';S.scroll=0;S.fnAns=false;return;
+  }
+  if(id==='LEFT'){if(S.cur>0)S.cur--;}else{if(S.cur<S.toks.length)S.cur++;}
+}
+function navUD(id){
+  const m=effMode();
+  if(S.ctx==='stat'){
+    const F=svFields();if(!F.length) return;
+    S.toks=[];S.cur=0;
+    S.sv.i=id==='DOWN'?Math.min(F.length-1,S.sv.i+1):Math.max(0,S.sv.i-1);return;
+  }
+  if(S.ctx==='calc'&&(S.screen==='result'||S.toks.length===0)){
+    if((m==='SD'||m==='REG')&&S.stat.data.length){
+      const F=svFields();S.ctx='stat';S.screen='statview';S.toks=[];S.cur=0;S.sv={i:id==='DOWN'?0:F.length-1};return;
+    }
+    if(['COMP','CMPLX','BASE'].includes(m)&&id==='UP'&&S.hist.length){
+      let idx=S.screen==='result'?S.hist.length-2:S.hist.length-1;
+      if(idx<0) return;
+      S.hidx=idx;S.screen='hist';return;
+    }
+    return;
+  }
+  if(id==='UP') S.cur=0;else S.cur=S.toks.length;
+}
+
+function exeKey(){
+  const m=effMode();
+  switch(S.ctx){
+    case 'prg': insertToks([T.colon()]);return;
+    case 'fmla': return fmlaAccept();
+    case 'stat': return statEditAccept();
+    case 'run': return runAccept();
+  }
+  let toks=S.toks;
+  if(S.screen==='result'||toks.length===0){if(!S.lastToks) return;toks=S.lastToks.slice();}
+  else if(toks.length===1&&toks[0].k==='fn'&&S.fnAns) toks=[toks[0],T.ans()];
+  calcShow(toks,m);
+}
+function calcShow(toks,m,suffix,store){
+  let r;
+  try{r=evalToks(toks,m);}
+  catch(e){if(e.calc){e.toks=toks;throw e;}throw e;}
+  setAns(r.val,m);
+  const vw=makeView(S.ans,m,r.conv);
+  if(m==='CMPLX'&&r.conv) vw.forced=true;
+  S.view=vw;S.resTop=toksText(toks)+(suffix||'');S.lastToks=toks.slice();S.screen='result';S.fnAns=false;
+  S.lastBottom=fmtView(vw).html;
+  if(['COMP','CMPLX','BASE'].includes(m)){S.hist.push({top:S.resTop,view:vw,toks:toks.slice()});if(S.hist.length>30)S.hist.shift();}
+  return r.val;
+}
+function curExprToks(){return (S.screen==='result'||S.toks.length===0)?[T.ans()]:S.toks;}
+
+function doAct(a,m){
+  const onRes=S.screen==='result'&&S.ctx==='calc', vw=S.view;
+  switch(a.act){
+    case 'none': return;
+    case 'base':
+      if(S.ctx==='calc'&&onRes&&vw.mode==='BASE'){checkBase(vw.val.re,a.b);vw.base=a.b;S.base=a.b;S.lastBottom=fmtView(vw).html;return;}
+      S.base=a.b;return;
+    case 'logic': return logicMenu();
+    case 'frac':
+      if(onRes&&vw.mode!=='BASE'&&vw.mode!=='CMPLX'){
+        if(vw.kind==='frac'){vw.kind='norm';}
+        else{const q=vw.val.q||approxFrac(vw.val.re);if(q&&fracStr(q,vw.improper)){vw.q=q;vw.kind='frac';}}
+        S.lastBottom=fmtView(vw).html;return;
+      }
+      insertToks([T.frac()]);return;
+    case 'dc':
+      if(onRes&&vw.mode!=='BASE'&&vw.mode!=='CMPLX'){
+        if(vw.kind==='frac'){const nv=!vw.improper;if(fracStr(vw.q||vw.val.q,nv)) vw.improper=nv;}
+        else{const q=vw.val.q||approxFrac(vw.val.re);if(q&&fracStr(q,true)){vw.q=q;vw.kind='frac';vw.improper=true;}}
+        S.lastBottom=fmtView(vw).html;
+      }
+      return;
+    case 'dms':
+      if(onRes&&vw.mode!=='BASE'&&vw.mode!=='CMPLX'){vw.kind=(vw.kind==='dms')?'norm':(dmsStr(vw.val.re)?'dms':vw.kind);S.lastBottom=fmtView(vw).html;return;}
+      insertToks([T.dms()]);return;
+    case 'dmsLeft':
+      if(onRes&&vw.kind==='dms'){vw.kind='norm';S.lastBottom=fmtView(vw).html;}
+      return;
+    case 'engR': case 'engL':
+      if(onRes&&vw.mode!=='BASE'&&!vw.val.im){
+        const x=vw.val.re;
+        const std=x===0?0:3*Math.floor(Math.floor(Math.log10(Math.abs(x)))/3);
+        if(vw.kind!=='eng'){vw.kind='eng';vw.eng=a.act==='engR'?std:std+3;}
+        else{
+          const ne=a.act==='engR'?vw.eng-3:vw.eng+3;
+          const mm=Math.abs(x/Math.pow(10,ne));
+          if(x===0||(mm<1e10&&ne>=-99&&ne<=99)) vw.eng=ne;
+        }
+        S.lastBottom=fmtView(vw).html;
+      }
+      return;
+    case 'drg': return openMenu([['D','R','G']],null,(p,k)=>insertToks([T.post(['degU','radU','graU'][k])]));
+    case 'const': return constMenu();
+    case 'clr': return clrMenu();
+    case 'ssum': return ssumMenu();
+    case 'svar': return svarMenu();
+    case 'pcmd': return pcmdMenu();
+    case 'sto': if(S.ctx!=='calc') return; S.pend='sto';return;
+    case 'rcl': if(S.ctx!=='calc') return; S.pend='rcl';return;
+    case 'mplus': case 'mminus': {
+      if(S.ctx!=='calc') return;
+      const toks=curExprToks();const r=evalToks(toks,m);
+      const v=r.val;S.vars.M=a.act==='mplus'?vadd(S.vars.M,v):vadd(S.vars.M,v,true);
+      if(m==='BASE') S.vars.M=V(checkBase(S.vars.M.re));
+      setAns(v,m);const vw2=makeView(S.ans,m);S.view=vw2;S.resTop=toksText(toks)+(a.act==='mplus'?'M+':'M−');
+      S.lastToks=toks.slice();S.screen='result';S.lastBottom=fmtView(vw2).html;return;
+    }
+    case 'DT': return doDT();
+    case 'CL':
+      if(S.ctx==='stat'){const F=svFields();const fld=F[S.sv.i];if(fld){S.stat.data.splice(fld.j,1);const F2=svFields();if(!F2.length){S.ctx='calc';S.screen='input';S.toks=[];S.cur=0;S.sv=null;return;}
+        const firstOf=F2.findIndex(x=>x.j===Math.min(fld.j,S.stat.data.length-1));S.sv.i=Math.max(0,firstOf);S.toks=[];S.cur=0;}}
+      return;
+  }
+}
+function doSto(v){
+  const m=effMode();
+  const toks=curExprToks();
+  const r=evalToks(toks,m);
+  S.vars[v]=m==='BASE'?V(Math.trunc(r.val.re)):Object.assign({},r.val);
+  setAns(r.val,m);
+  const vw=makeView(S.ans,m);S.view=vw;S.resTop=toksText(toks)+'→'+v;S.lastToks=toks.slice();S.screen='result';S.lastBottom=fmtView(vw).html;
+}
+function doRcl(v){
+  const m=effMode();
+  const val=Object.assign({},S.vars[v]);if(m!=='CMPLX') val.im=0;
+  setAns(val,m);
+  const vw=makeView(S.ans,m);S.view=vw;S.resTop=v;S.lastToks=[T.v(v)];S.screen='result';S.lastBottom=fmtView(vw).html;
+}
+function reIm(){
+  if(S.screen==='result'&&S.view&&S.view.mode==='CMPLX'&&(S.view.val.im!==0||S.view.forced)){S.view.part=S.view.part?0:1;S.lastBottom=fmtView(S.view).html;}
+}
+function splitTop(toks,k){
+  const out=[[]];let d=0;
+  for(const t of toks){
+    if(t.k==='('||t.k==='fn'||t.k==='pow'||t.k==='xrt') d++;
+    if(t.k===')') d--;
+    if(t.k===k&&d<=0) out.push([]);else out[out.length-1].push(t);
+  }
+  return out;
+}
+function dataEntry(toks,m){
+  const parts=splitTop(toks,';');
+  if(parts.length>2) throw CErr(SYN);
+  if(parts.length===2&&!S.freq) throw CErr(SYN);
+  const xy=splitTop(parts[0],',');
+  if(m==='SD'&&xy.length!==1) throw CErr(SYN);
+  if(m==='REG'&&xy.length!==2) throw CErr(SYN);
+  const ev=t=>R(evalToks(t,m).val);
+  const x=ev(xy[0]),y=m==='REG'?ev(xy[1]):0,f=parts.length===2?ev(parts[1]):1;
+  if(!(f>0)) throw CErr(MATH);
+  const max=m==='SD'?(S.freq?40:80):(S.freq?26:40);
+  if(S.stat.data.length>=max) throw CErr(FULL);
+  S.stat.data.push({x,y,f});
+  S.ans=V(x);
+  return S.stat.data.length;
+}
+function doDT(){
+  if(S.ctx==='prg'){insertToks([T.DT()]);return;}
+  if(S.ctx!=='calc') return;
+  const m=effMode();
+  const toks=S.screen==='result'?[T.ans()]:S.toks;
+  if(!toks.length) return;
+  try{S.lineNo=dataEntry(toks,m);}
+  catch(e){if(e.calc){e.toks=toks;}throw e;}
+  S.screen='line';S.toks=[];S.cur=0;S.lastBottom='0';
+}
+
+// ---------- history ----------
+function histKey(id,sh,al){
+  const h=S.hist[S.hidx];
+  if(id==='UP'){if(S.hidx>0)S.hidx--;return;}
+  if(id==='DOWN'){if(S.hidx<S.hist.length-1)S.hidx++;return;}
+  if(id==='LEFT'||id==='RIGHT'){S.toks=h.toks.slice();S.cur=id==='LEFT'?S.toks.length:0;S.screen='input';S.scroll=0;return;}
+  if(id==='AC'){S.screen='input';S.toks=[];S.cur=0;S.lastBottom='0';return;}
+  if(id==='EXE'&&!sh){S.screen='input';calcShow(h.toks.slice(),effMode());return;}
+  S.view=h.view;S.resTop=h.top;S.lastToks=h.toks.slice();S.screen='result';S.lastBottom=fmtView(h.view).html;
+  editorKey(id,sh,al);
+}
+
+// ---------- statistics data viewer ----------
+function svFields(){
+  const out=[],reg=effMode()==='REG';
+  S.stat.data.forEach((d,j)=>{out.push({j,key:'x',label:`x${j+1}=`});if(reg) out.push({j,key:'y',label:`y${j+1}=`});if(S.freq) out.push({j,key:'f',label:`Freq${j+1}=`});});
+  return out;
+}
+function statEditAccept(){
+  const F=svFields();const fld=F[S.sv.i];if(!fld) return;
+  if(S.toks.length){
+    let v;
+    try{v=R(evalToks(S.toks,effMode()).val);}catch(e){if(e.calc){e.toks=S.toks.slice();}throw e;}
+    if(fld.key==='f'&&!(v>0)) throw CErr(MATH);
+    S.stat.data[fld.j][fld.key]=v;
+  }
+  S.toks=[];S.cur=0;
+}
+
+// ---------- menus ----------
+function openMenu(pages,nums,pick,opts){
+  S.menu=Object.assign({pages,nums,page:0,pick,ret:{screen:S.screen,ctx:S.ctx}},opts||{});
+  S.screen='menu';
+}
+function menuKey(id,sh){
+  const M=S.menu;const P=M.pages.length;
+  if(id==='LEFT'){M.page=(M.page-1+P)%P;return;}
+  if(id==='RIGHT'){M.page=(M.page+1)%P;return;}
+  if(M.isMode&&id==='MODE'&&!sh){M.page=(M.page+1)%P;return;}
+  if(M.prg&&id==='PROG'&&!sh){S.menu=null;S.screen='input';runMenu();return;}
+  if(M.prg&&id==='EXE'&&!sh){S.menu=null;S.ps={act:'RUN'};S.screen='prgsel';return;}
+  if(id==='MODE'&&S.mode==='PRGM'&&!M.isMode){S.menu=null;S.pe=null;S.ctx='calc';S.toks=[];S.cur=0;S.screen='input';if(sh) setupMenu();else modeMenu();return;}
+  if(M.isMode&&(id==='ADD'||id==='SUB')){S.contrast=Math.max(0,Math.min(9,S.contrast+(id==='ADD'?1:-1)));return;}
+  if(id==='AC'||(sh&&id==='PROG')){S.menu=null;S.screen=M.ret.screen;S.ctx=M.ret.ctx;if(M.onExit) M.onExit();return;}
+  if(DIG[id]&&!sh){
+    const d=+DIG[id];
+    const find=pg=>{const nums=M.nums?M.nums[pg]:M.pages[pg].map((_,k)=>k+1);const k=nums.indexOf(d);return k;};
+    let pg=M.page,k=find(pg);
+    if(k<0&&M.anyPage){for(let p2=0;p2<P;p2++){const k2=find(p2);if(k2>=0){pg=p2;k=k2;break;}}}
+    if(k<0) return;
+    S.menu=null;S.screen=M.ret.screen;S.ctx=M.ret.ctx;
+    M.pick(pg,k,M.pages[pg][k]);
+  }
+}
+function modeMenu(){
+  openMenu([['COMP','CMPLX','BASE'],['SD','REG','PRGM']],[[1,2,3],[4,5,6]],(pg,k,lab)=>setMode(lab),{isMode:true,anyPage:true});
+}
+function setMode(md){
+  const prev=S.mode;
+  if(S.ctx!=='calc'){S.ctx='calc';}
+  if(prev==='CMPLX'&&md!=='CMPLX'){S.ans=V(S.ans.re);}
+  if(md==='BASE'&&prev!=='BASE'){S.ans=V(Math.trunc(S.ans.re));}
+  if(md!==prev||md==='SD'||md==='REG') {S.stat.data=md===prev?S.stat.data:[];}
+  S.mode=md;S.hist=[];S.fv={};S.toks=[];S.cur=0;S.screen='input';S.lastBottom='0';S.view=null;S.lastToks=null;
+  if(md==='REG') regTypeMenu();
+  if(md==='PRGM') openPrgMenu();
+}
+function regTypeMenu(){
+  openMenu([['Lin','Log','Exp','Pwr'],['Inv','Quad','AB-Exp']],null,(pg,k,lab)=>{S.stat.reg=lab;});
+}
+function setupMenu(insertMode){
+  const pages=[['Deg','Rad','Gra'],['Fix','Sci','Norm'],['ab/c','d/c'],['a+bi','r∠θ'],['FreqOn','FreqOff'],['Contrast']];
+  openMenu(pages,null,(pg,k,lab)=>{
+    if(insertMode){
+      if(['Deg','Rad','Gra','FreqOn','FreqOff'].includes(lab)) insertToks([T.cmd(lab)]);
+      else if(lab==='Fix'||lab==='Sci'||lab==='Norm') digitPrompt(lab,d=>insertToks([T.cmd(lab,d)]));
+      return;
+    }
+    switch(lab){
+      case 'Deg':case 'Rad':case 'Gra':S.angle=lab;break;
+      case 'Fix':case 'Sci':case 'Norm':digitPrompt(lab,d=>{S.disp=lab==='Sci'?{t:'Sci',n:d===0?10:d}:{t:lab,n:d};refreshBottom();});break;
+      case 'ab/c':S.fracFmt='abc';break;case 'd/c':S.fracFmt='dc';break;
+      case 'a+bi':S.cplxFmt='rect';break;case 'r∠θ':S.cplxFmt='polar';break;
+      case 'FreqOn':case 'FreqOff':{const v=lab==='FreqOn';if(v!==S.freq){S.freq=v;S.stat.data=[];}break;}
+      case 'Contrast':S.contrastRet={screen:S.screen,ctx:S.ctx};S.screen='contrast';break;
+    }
+  });
+}
+function refreshBottom(){if(S.view){S.lastBottom=fmtView(S.view).html;}}
+function digitPrompt(lab,cb){
+  const text=lab==='Norm'?'Norm 1~2?':lab+' 0~9?';
+  S.prompt={text,ret:{screen:S.screen,ctx:S.ctx},onDigit:d=>{if(lab==='Norm'&&(d<1||d>2)) return false;cb(d);return true;}};
+  S.screen='prompt';
+}
+function promptKey(id){
+  const P=S.prompt;
+  if(id==='AC'){S.screen=P.ret.screen;S.ctx=P.ret.ctx;S.prompt=null;if(P.onCancel)P.onCancel();return;}
+  if(P.onDigit&&DIG[id]){if(P.onDigit(+DIG[id])!==false){S.screen=P.ret.screen;S.ctx=P.ret.ctx;S.prompt=null;}return;}
+  if(P.onExe&&id==='EXE'){S.prompt=null;P.onExe();}
+}
+function contrastKey(id){
+  if(id==='LEFT') S.contrast=Math.max(0,S.contrast-1);
+  else if(id==='RIGHT') S.contrast=Math.min(9,S.contrast+1);
+  else if(id==='AC'||id==='PROG'){const r=S.contrastRet||{screen:'input',ctx:'calc'};S.screen=r.screen;S.ctx=r.ctx;}
+}
+function clrMenu(){
+  const m=effMode(),st=(m==='SD'||m==='REG');
+  if(S.ctx==='prg'){openMenu([[st?'Stat':'Mem']],null,()=>insertToks([T.cmd(st?'ClrStat':'ClrMemory')]));return;}
+  openMenu([[st?'Stat':'Mem','Setup','All']],null,(pg,k,lab)=>{
+    const txt={Mem:'Clear Memory?',Stat:'Clear Stat?',Setup:'Reset Setup?',All:'Reset All?'}[lab];
+    S.prompt={text:txt,sub:'[EXE]:Yes  [AC]:No',ret:{screen:S.screen,ctx:S.ctx},onExe:()=>{
+      if(lab==='Mem'){initVars();S.fv={};S.msg={top:'Memory Cleared',bottom:''};}
+      if(lab==='Stat'){S.stat.data=[];S.msg={top:'Stat Cleared',bottom:''};}
+      if(lab==='Setup'){const st2=S.stat;resetSetup();S.stat={data:[],reg:'Lin'};S.hist=[];S.msg={top:'Setup Cleared',bottom:''};}
+      if(lab==='All'){const c=S.contrast;resetAll();S.contrast=c;S.msg={top:'Reset All',bottom:''};}
+      S.ctx='calc';S.screen='msg';S.toks=[];S.cur=0;S.view=null;S.lastToks=null;
+    }};
+    S.screen='prompt';
+  });
+}
+function constMenu(){
+  const pages=[];for(let p=0;p<10;p++) pages.push(CONSTS.slice(p*4,p*4+4).map(c=>c[0]));
+  openMenu(pages,null,(pg,k)=>insertToks([T.c(pg*4+k)]));
+}
+function logicMenu(){
+  openMenu([['and','or','xnor'],['xor','Not','Neg'],['d','h','b','o']],null,(pg,k,lab)=>{
+    if(['and','or','xnor','xor'].includes(lab)) insertToks([T.lop(lab)]);
+    else if(lab==='Not'||lab==='Neg') insertToks([T.fn(lab)]);
+    else insertToks([T.bp(lab)]);
+  });
+}
+function ssumMenu(){
+  const m=effMode();
+  if(m==='SD') return openMenu([['Σx²','Σx','n']],null,(pg,k)=>insertToks([T.st(['sx2','sx','n'][k])]));
+  openMenu([['Σx²','Σx','n'],['Σy²','Σy','Σxy'],['Σx²y','Σx³','Σx⁴']],null,(pg,k)=>insertToks([T.st([['sx2','sx','n'],['sy2','sy','sxy'],['sx2y','sx3','sx4']][pg][k])]));
+}
+function svarMenu(){
+  const m=effMode();
+  if(m==='SD') return openMenu([['x̄','xσn','xσn-1'],['minX','maxX']],null,(pg,k)=>insertToks([T.st([['mx','sgx','sgx1'],['minX','maxX']][pg][k])]));
+  openMenu([['VAR','MINMAX','TYPE']],null,(pg,k)=>{
+    if(k===0){
+      const quad=S.stat.reg==='Quad';
+      const pages=[['x̄','xσn','xσn-1'],['ȳ','yσn','yσn-1'],quad?['a','b','c']:['a','b','r'],quad?['x̂₁','x̂₂','ŷ']:['x̂','ŷ']];
+      const ids=[['mx','sgx','sgx1'],['my','sgy','sgy1'],quad?['ra','rb','rc']:['ra','rb','rr'],quad?['xh1','xh2','yh']:['xh','yh']];
+      openMenu(pages,null,(pg2,k2)=>{const f=ids[pg2][k2];insertToks([pg2===3?T.est(f):T.st(f)]);});
+    } else if(k===1){
+      openMenu([['minX','maxX'],['minY','maxY']],null,(pg2,k2)=>insertToks([T.st([['minX','maxX'],['minY','maxY']][pg2][k2])]));
+    } else regTypeMenu();
+  });
+}
+function pcmdMenu(){
+  if(S.ctx!=='prg') return;
+  const pages=[['?','→',':','◢'],['⇒','=','≠','>'],['≥','<','≤','Goto'],['Lbl','If','Then','Else'],['IfEnd','For','To','Step'],['Next','While','WhileEnd','Break']];
+  openMenu(pages,null,(pg,k,lab)=>{
+    const map={'?':T.q,'→':T.sto,':':T.colon,'◢':T.disp,'⇒':T.imp};
+    if(map[lab]){insertToks([map[lab]()]);if(lab==='→') S.alphaOnce=true;}
+    else if(['=','≠','>','≥','<','≤'].includes(lab)) insertToks([T.rel(lab)]);
+    else insertToks([T.kw(lab)]);
+  });
+}
+
+// ---------- built-in formulas ----------
+function fmlaStart(){S.fm={stage:'sel',dig:'',idx:S.fm&&S.fm.idx!=null?S.fm.idx:0,scroll:false};S.screen='fmlasel';S.ctx='calc';}
+function fmlaSelKey(id){
+  const F=S.fm;
+  if(id==='AC'){S.screen='input';S.toks=[];S.cur=0;S.fm=null;S.lastBottom='0';return;}
+  if(id==='DOWN'||id==='UP'){
+    if(!F.scroll){F.scroll=true;F.idx=id==='DOWN'?0:FMLAS.length-1;}
+    else F.idx=(F.idx+(id==='DOWN'?1:-1)+FMLAS.length)%FMLAS.length;
+    F.dig='';return;
+  }
+  if(id==='EXE'&&F.scroll) return fmlaBegin(F.idx);
+  if(DIG[id]){F.scroll=false;F.dig+=DIG[id];if(F.dig.length===2){const n=+F.dig;F.dig='';if(n>=1&&n<=23) fmlaBegin(n-1);}return;}
+}
+function fmlaBegin(idx){S.fm={stage:'prompt',idx,vi:0,ri:0,res:null};S.ctx='fmla';S.screen='fmlaprompt';S.toks=[];S.cur=0;}
+function fmlaAccept(){
+  const F=S.fm,fm=FMLAS[F.idx],vn=fm.vs[F.vi];
+  if(S.toks.length){let v;try{v=R(evalToks(S.toks,'COMP').val);}catch(e){if(e.calc){e.toks=S.toks.slice();S.errBack={ctx:'fmla',screen:'fmlaprompt'};}throw e;}S.fv[vn]=v;}
+  else if(S.fv[vn]==null) S.fv[vn]=0;
+  S.toks=[];S.cur=0;F.vi++;
+  if(F.vi<fm.vs.length) return;
+  const vals={};fm.vs.forEach(k=>vals[k]=S.fv[k]||0);
+  let res;
+  try{res=fm.f(vals).map(r15);}catch(e){if(e.calc){S.ctx='calc';throw e;}throw e;}
+  F.res=res;F.ri=0;F.stage='res';S.ctx='calc';S.screen='fmlares';S.ans=V(res[0]);
+}
+function fmlaResKey(id,sh,al){
+  const F=S.fm;
+  if(id==='EXE'&&!sh){fmlaBegin(F.idx);return;}
+  if(id==='DOWN'||id==='UP'){if(F.res.length>1){F.ri=(F.ri+1)%F.res.length;S.ans=V(F.res[F.ri]);}return;}
+  if(id==='FMLA'){fmlaStart();return;}
+  if(id==='AC'){S.screen='input';S.toks=[];S.cur=0;S.lastBottom='0';return;}
+  const vw=makeView(S.ans,'COMP');S.view=vw;S.resTop=FMLAS[F.idx].out[F.ri];S.lastToks=[T.ans()];S.screen='result';S.lastBottom=fmtView(vw).html;
+  editorKey(id,sh,al);
+}
+
+// ---------- program mode ----------
+function openPrgMenu(){
+  S.ctx='calc';S.toks=[];S.cur=0;
+  openMenu([['EDIT','RUN','DEL']],null,(pg,k,lab)=>{S.ps={act:lab};S.screen='prgsel';},{onExit:()=>{setMode('COMP');},prg:true});
+}
+function prgSelKey(id){
+  const P=S.ps;
+  if(id==='AC'||id==='PROG'){openPrgMenu();return;}
+  if(id==='MODE'){S.screen='input';if(S.shift) setupMenu();else modeMenu();return;}
+  if(!['D1','D2','D3','D4'].includes(id)) return;
+  const n=+DIG[id]-1;
+  if(P.act==='EDIT'){
+    if(S.progs[n]){openEditor(n,S.progs[n].toks.length);return;}
+    openMenu([['COMP','CMPLX'],['BASE','SD','REG']],[[1,2],[3,4,5]],(pg,k,lab)=>{S.progs[n]={mode:lab,toks:[]};openEditor(n,0);},{onExit:()=>{S.screen='prgsel';}});
+    S.menu.ret={screen:'prgsel',ctx:'calc'};
+    return;
+  }
+  if(P.act==='RUN'){if(S.progs[n]&&S.progs[n].toks.length) runProgram(n);return;}
+  if(P.act==='DEL'){S.progs[n]=null;return;}
+}
+function openEditor(n,cur){
+  S.pe={idx:n};S.ctx='prg';S.toks=S.progs[n].toks;S.cur=cur;S.scroll=0;S.screen='prgedit';
+}
+function exitEditor(){
+  S.pe=null;S.ctx='calc';S.toks=[];S.cur=0;S.mode='PRGM';openPrgMenu();
+}
+function runMenu(){
+  openMenu([['P1','P2','P3','P4']],null,(pg,k)=>{if(S.progs[k]&&S.progs[k].toks.length) runProgram(k);});
+}
+
+// program interpreter
+function compileProg(toks){
+  const st=[];let cur=[],start=0;
+  toks.forEach((t,i)=>{if(t.k===':'||t.k==='◢'){st.push({toks:cur,start,sep:t.k});cur=[];start=i+1;}else cur.push(t);});
+  st.push({toks:cur,start,sep:null});
+  return st;
+}
+function runProgram(n){
+  const p=S.progs[n];
+  S.run={n,mode:p.mode,st:compileProg(p.toks),pc:0,loops:[],elseEnter:false,steps:0};
+  S.ctx='calc';S.screen='running';S.toks=[];S.cur=0;
+  stepRun();
+}
+function abortRun(){S.run=null;S.ctx='calc';S.screen='input';S.toks=[];S.cur=0;S.lastBottom='0';}
+function stepRun(){
+  const R=S.run;if(!R) return;
+  let count=0;
+  try{
+    for(;;){
+      if(!S.run) return;
+      if(R.pc>=R.st.length){finishRun();return;}
+      const r=execStmt(R);
+      if(r==='wait'||r==='pause'){render();return;}
+      if(++count>3000){setTimeout(()=>{stepRun();render();},0);return;}
+    }
+  }catch(e){
+    if(e.calc){S.errProg=R.n;showError(e.calc,e.pos,S.progs[R.n].toks);S.err.prog=R.n;render();return;}
+    throw e;
+  }
+}
+function finishRun(){
+  const R=S.run;S.run=null;
+  const vw=makeView(S.ans,R.mode);S.view=vw;S.resTop='';S.lastToks=null;S.screen='result';S.ctx='calc';S.lastBottom=fmtView(vw).html;
+  S.view.mode=R.mode;
+  render();
+}
+function topIdx(toks,k){let d=0;for(let i=0;i<toks.length;i++){const t=toks[i];if(t.k==='('||t.k==='fn'||t.k==='pow'||t.k==='xrt')d++;if(t.k===')')d--;if(t.k===k&&d<=0) return i;}return -1;}
+function evalSeg(toks,st,off){
+  try{return evalToks(toks,S.run.mode).val;}
+  catch(e){if(e.calc){e.pos=st.start+off+(e.pos||0);}throw e;}
+}
+function matchEnd(R,at,open,close){
+  let d=0;for(let j=at;j<R.st.length;j++){const t=R.st[j].toks[0];if(t&&t.k==='kw'){if(t.w===open)d++;else if(t.w===close){d--;if(d===0) return j;}}}
+  throw CErr(SYN,R.st[at].start);
+}
+function findIfParts(R,at){
+  const out={else:null,end:null};
+  for(let j=at+1;j<R.st.length;j++){const t=R.st[j].toks[0];if(t&&t.k==='kw'){if(t.w==='If') break;if(t.w==='Else'&&out.else==null) out.else=j;if(t.w==='IfEnd'){out.end=j;break;}}}
+  return out;
+}
+function assignVar(name,v){
+  const m=S.run?S.run.mode:effMode();
+  S.vars[name]=m==='BASE'?V(Math.trunc(v.re)):Object.assign({},v);
+}
+function execSimple(toks,st,off){
+  if(!toks.length) return null;
+  const f=toks[0],R=S.run;
+  if(f.k==='kw'){
+    if(f.w==='Goto'){const d=toks[1];if(!d||d.k!=='num') throw CErr(SYN,st.start+off);
+      const j=R.st.findIndex(s=>s.toks[0]&&s.toks[0].k==='kw'&&s.toks[0].w==='Lbl'&&s.toks[1]&&s.toks[1].s===d.s);
+      if(j<0) throw CErr(GO,st.start+off);return {jump:j};}
+    if(f.w==='Break') return {brk:true};
+    throw CErr(SYN,st.start+off);
+  }
+  if(f.k==='cmd'){
+    switch(f.w){
+      case 'Deg':case 'Rad':case 'Gra':S.angle=f.w;break;
+      case 'Fix':S.disp={t:'Fix',n:f.n};break;
+      case 'Sci':S.disp={t:'Sci',n:f.n===0?10:f.n};break;
+      case 'Norm':S.disp={t:'Norm',n:f.n===2?2:1};break;
+      case 'FreqOn':S.freq=true;break;case 'FreqOff':S.freq=false;break;
+      case 'ClrMemory':{const a=S.ans;initVars();S.ans=a;break;}
+      case 'ClrStat':S.stat.data=[];break;
+      case 'Dec':S.base='DEC';break;case 'Hex':S.base='HEX';break;case 'Bin':S.base='BIN';break;case 'Oct':S.base='OCT';break;
+    }
+    return null;
+  }
+  const ip=topIdx(toks,'⇒');
+  if(ip>=0){const c=evalSeg(toks.slice(0,ip),st,off);S.ans=c;if(c.re!==0||c.im!==0) return execSimple(toks.slice(ip+1),st,off+ip+1);return {skip:true};}
+  const ia=topIdx(toks,'→');
+  if(ia>=0){
+    const tgt=toks[ia+1];
+    if(!tgt||tgt.k!=='var'||ia+2!==toks.length) throw CErr(SYN,st.start+off+ia+1);
+    if(ia===1&&toks[0].k==='?') return {wait:tgt.v};
+    const v=evalSeg(toks.slice(0,ia),st,off);assignVar(tgt.v,v);setAns(v,R.mode);return null;
+  }
+  const last=toks[toks.length-1];
+  if(last.k==='DT'){try{dataEntry(toks.slice(0,-1),R.mode);}catch(e){if(e.calc)e.pos=st.start+off;throw e;}return null;}
+  if(last.k==='M+'||last.k==='M-'){const v=evalSeg(toks.slice(0,-1),st,off);S.vars.M=vadd(S.vars.M,v,last.k==='M-');setAns(v,R.mode);return null;}
+  const v=evalSeg(toks,st,off);setAns(v,R.mode);return null;
+}
+function execStmt(R){
+  const st=R.st[R.pc],t=st.toks,f=t[0];
+  let next=R.pc+1,ran=true,r=null;
+  if(++R.steps>2000000) throw CErr(STACK,st.start);
+  if(f&&f.k==='kw'&&!['Goto','Break'].includes(f.w)){
+    switch(f.w){
+      case 'Lbl': ran=false;break;
+      case 'If':{const c=evalSeg(t.slice(1),st,1);S.ans=c;ran=false;
+        if(c.re===0&&c.im===0){const pp=findIfParts(R,R.pc);if(pp.else!=null){next=pp.else;R.elseEnter=true;}else if(pp.end!=null) next=pp.end+1;else throw CErr(SYN,st.start);}
+        else{const nx=R.st[R.pc+1];if(!nx||!nx.toks[0]||nx.toks[0].k!=='kw'||nx.toks[0].w!=='Then') throw CErr(SYN,st.start);}
+        break;}
+      case 'Then': r=execSimple(t.slice(1),st,1);break;
+      case 'Else':
+        if(R.elseEnter){R.elseEnter=false;r=execSimple(t.slice(1),st,1);}
+        else{const pp=findIfParts(R,R.pc-1);let j=R.pc;for(;j<R.st.length;j++){const q=R.st[j].toks[0];if(q&&q.k==='kw'&&q.w==='IfEnd')break;}next=j+1;ran=false;}
+        break;
+      case 'IfEnd': ran=false;break;
+      case 'For':{
+        const ia=topIdx(t,'→');const ito=t.findIndex(x=>x.k==='kw'&&x.w==='To');const ist=t.findIndex(x=>x.k==='kw'&&x.w==='Step');
+        if(ia<0||ito<0||ito!==ia+2||t[ia+1].k!=='var') throw CErr(SYN,st.start);
+        const v=t[ia+1].v;const start=evalSeg(t.slice(1,ia),st,1);
+        const end=R_(evalSeg(t.slice(ito+1,ist<0?t.length:ist),st,ito+1));
+        const step=ist<0?1:R_(evalSeg(t.slice(ist+1),st,ist+1));
+        assignVar(v,start);
+        const cur=S.vars[v].re;ran=false;
+        if((step>=0&&cur>end)||(step<0&&cur<end)){next=matchEnd(R,R.pc,'For','Next')+1;}
+        else R.loops.push({type:'for',at:R.pc,v,end,step});
+        break;}
+      case 'Next':{const L=R.loops[R.loops.length-1];if(!L||L.type!=='for') throw CErr(SYN,st.start);
+        const nv=r15(S.vars[L.v].re+L.step);S.vars[L.v]=V(nv);ran=false;
+        if((L.step>=0&&nv<=L.end)||(L.step<0&&nv>=L.end)) next=L.at+1;else R.loops.pop();
+        break;}
+      case 'While':{const c=evalSeg(t.slice(1),st,1);ran=false;const L=R.loops[R.loops.length-1];
+        if(c.re!==0||c.im!==0){if(!L||L.at!==R.pc) R.loops.push({type:'while',at:R.pc});}
+        else{if(L&&L.at===R.pc) R.loops.pop();next=matchEnd(R,R.pc,'While','WhileEnd')+1;}
+        break;}
+      case 'WhileEnd':{const L=R.loops[R.loops.length-1];if(!L||L.type!=='while') throw CErr(SYN,st.start);next=L.at;ran=false;break;}
+      case 'To': case 'Step': throw CErr(SYN,st.start);
+    }
+  } else r=execSimple(t,st,0);
+  if(r){
+    if(r.wait){R.pending={v:r.wait,after:next,pause:st.sep==='◢'};R.pc=next;S.ctx='run';S.screen='runprompt';S.toks=[];S.cur=0;return 'wait';}
+    if(r.jump!=null) next=r.jump;
+    if(r.brk){const L=R.loops.pop();if(!L) throw CErr(SYN,st.start);next=matchEnd(R,L.at,L.type==='for'?'For':'While',L.type==='for'?'Next':'WhileEnd')+1;ran=false;}
+    if(r.skip) ran=false;
+  }
+  R.pc=next;
+  if(ran&&st.sep==='◢'){S.view=makeView(S.ans,R.mode);S.screen='runpause';return 'pause';}
+}
+function R_(v){return R(v);}
+function runAccept(){
+  const Rn=S.run;const p=Rn.pending;
+  let v;
+  if(S.toks.length){try{v=evalToks(S.toks,Rn.mode).val;}catch(e){if(e.calc){S.errBack=null;}throw e;}}
+  else v=Object.assign({},S.vars[p.v]);
+  assignVar(p.v,v);setAns(v,Rn.mode);
+  S.ctx='calc';S.toks=[];S.cur=0;Rn.pending=null;
+  if(p.pause){S.view=makeView(S.ans,Rn.mode);S.screen='runpause';return;}
+  S.screen='running';stepRun();
+}
+
+/* =====================================================================
+   Rendering
+   ===================================================================== */
+const IND=[['S','S'],['A','A'],['M','M'],['STO','STO'],['RCL','RCL'],['MODE',''],['hyp','hyp'],['FIX','FIX'],['SCI','SCI'],['ENG','ENG'],['ANG_U',''],['RI','R⇔I'],['I','i'],['ANG','∠'],['DISP','◢'],['sp',''],['UP','▲'],['DN','▼']];
+const $=s=>document.querySelector(s);
+const elInd=$('#ind'),elL1=$('#l1'),elL2=$('#l2'),elLcd=$('#lcd'),elCalc=$('#calc');
+const SUPMAP={'²':'2','³':'3','¹':'1','⁻':'−','ˣ':'x','ʳ':'r','ᵍ':'g','⁴':'4'};
+function supHTML(t){let o='',buf='';const fl=()=>{if(buf){o+=`<sup>${esc(buf)}</sup>`;buf='';}};for(const c of Array.from(String(t))){if(SUPMAP[c])buf+=SUPMAP[c];else{fl();o+=esc(c);}}fl();return o;}
+const cellW=c=>SUPMAP[c]?3:5.1;
+function cellsHTML(chars){return chars.map(c=>SUPMAP[c]?`<span class="cell sc"><span class="sp">${esc(SUPMAP[c])}</span></span>`:`<span class="cell">${c===' '?'&nbsp;':esc(c)}</span>`).join('');}
+function editorLine(prefix,toks,cur,showCursor){
+  const pre=graphemes(prefix||'');
+  const cells=[...pre];let curChar=pre.length;
+  const tokStart=[];
+  toks.forEach((t,i)=>{if(i===cur) curChar=cells.length;tokStart.push(cells.length);cells.push(...graphemes(t.s));});
+  if(cur>=toks.length) curChar=cells.length;
+  const W=16;
+  let sc=S.scroll||0;
+  if(curChar<sc) sc=curChar;
+  if(curChar>sc+W-1) sc=curChar-W+1;
+  if(sc<0) sc=0;
+  S.scroll=sc;
+  const vis=cells.slice(sc,sc+W);
+  let html=cellsHTML(vis);
+  if(showCursor){
+    const left=cells.slice(sc,curChar).reduce((a,c)=>a+cellW(c),0);
+    const remaining=S.ctx==='prg'?680-progBytes():99-toks.length;
+    const cls=remaining<=10?'cur blk':(!S.insert&&cur<toks.length?'cur ov':'cur');
+    let w='';
+    if(cls==='cur ov'){const wd=graphemes(toks[cur].s).reduce((a,c)=>a+cellW(c),0);w=`;width:calc(var(--u)*${wd})`;}
+    html+=`<span class="${cls}" style="left:calc(var(--u)*${left})${w}"></span>`;
+  }
+  if(sc>0) html+='<span class="arrL">◀</span>';
+  if(cells.length>sc+W) html+='<span class="arrR">▶</span>';
+  return html;
+}
+function textLine(s){
+  const cells=graphemes(s||'');const vis=cells.slice(0,16);
+  return cellsHTML(vis)+(cells.length>16?'<span class="arrR">▶</span>':'');
+}
+function menuHTML(M){
+  const labels=M.pages[M.page];const nums=M.nums?M.nums[M.page]:labels.map((_,k)=>k+1);
+  const P=M.pages.length;
+  const t=`<div class="menu">${labels.map(l=>`<span>${supHTML(l)}</span>`).join('')}</div>`+(P>1?'<span class="arrL">◀</span><span class="arrR">▶</span>':'');
+  const b=`<div class="menu">${nums.map(n=>`<span>${n}</span>`).join('')}</div>`;
+  return [t,b];
+}
+function render(){
+  const on=new Set();let l1='',l2='';
+  elLcd.classList.toggle('off',!S.on);
+  elLcd.style.setProperty('--ink',`rgba(22,32,15,${0.3+S.contrast*0.078})`);
+  elLcd.style.color=`rgba(22,32,15,${0.3+S.contrast*0.078})`;
+  if(!S.on){elInd.innerHTML='';elL1.innerHTML='';elL2.innerHTML='';updateBodyClass();return;}
+  const m=effMode();
+  if(S.shift) on.add('S');
+  if(S.alpha||S.alphaOnce) on.add('A');
+  if(S.vars.M.re!==0||S.vars.M.im!==0) on.add('M');
+  if(S.pend==='sto') on.add('STO');
+  if(S.pend==='rcl') on.add('RCL');
+  if(S.hyp) on.add('hyp');
+  if(S.disp.t==='Fix') on.add('FIX');
+  if(S.disp.t==='Sci') on.add('SCI');
+  let modeTag=S.mode==='BASE'?'BASE-'+S.base:S.mode;
+  if(S.ctx==='prg'&&S.pe) modeTag='PRGM '+(S.pe.idx+1);
+  if(['fmlasel','fmlaprompt','fmlares'].includes(S.screen)) modeTag='FMLA';
+  if(S.run) modeTag='PRGM';
+  if(S.run&&S.run.mode!=='COMP'&&S.run.mode!=='BASE') modeTag=S.run.mode;
+  if(S.run&&S.run.mode==='BASE') modeTag='BASE-'+S.base;
+  const angTag=m==='BASE'?'':S.angle[0];
+  switch(S.screen){
+    case 'input':
+      l1=editorLine('',S.toks,S.cur,true);l2=S.lastBottom;
+      if(S.hist.length&&['COMP','CMPLX','BASE'].includes(m)&&S.toks.length===0) on.add('UP');
+      break;
+    case 'result':{
+      l1=textLine(S.resTop);const f=fmtView(S.view);l2=f.html;f.inds.forEach(x=>on.add(x));
+      if(S.hist.length>1&&['COMP','CMPLX','BASE'].includes(m)) on.add('UP');
+      break;}
+    case 'error': l1=textLine(S.err.msg);l2='';break;
+    case 'menu':{const [a,b]=menuHTML(S.menu);l1=a;l2=b;break;}
+    case 'prompt': l1=textLine(S.prompt.text);l2=S.prompt.sub?`<span class="smalltxt">${esc(S.prompt.sub)}</span>`:'';break;
+    case 'msg': l1=textLine(S.msg.top);l2=`<span class="smalltxt">[AC]</span>`;break;
+    case 'contrast': l1=textLine('◀LIGHT     DARK▶');l2='<span>fx-50FH</span>';break;
+    case 'hist':{const h=S.hist[S.hidx];l1=textLine(h.top);const f=fmtView(h.view);l2=f.html;f.inds.forEach(x=>on.add(x));if(S.hidx>0) on.add('UP');on.add('DN');break;}
+    case 'line': l1=textLine('Line =');l2=`<span>${S.lineNo}</span>`;break;
+    case 'statview':{const F=svFields();const fld=F[S.sv.i];
+      if(!fld){l1='';l2='';break;}
+      if(S.toks.length) l1=editorLine(fld.label,S.toks,S.cur,true);else l1=textLine(fld.label);
+      l2=numHTML(fmtNum(S.stat.data[fld.j][fld.key]));if(S.sv.i>0) on.add('UP');if(S.sv.i<F.length-1) on.add('DN');break;}
+    case 'fmlasel':{const F=S.fm;
+      if(F.scroll){const nm=`${String(F.idx+1).padStart(2,'0')}:${FMLAS[F.idx].nm}`;l1=textLine(nm);l2='';}
+      else{l1=textLine('Formula No.?');l2=`<span>-${esc((F.dig+'  ').slice(0,2).replace(/ /g,'&nbsp;'))}-</span>`.replace(/&amp;nbsp;/g,'&nbsp;');}
+      on.add('UP');on.add('DN');break;}
+    case 'fmlaprompt':{const F=S.fm,fm=FMLAS[F.idx],vn=fm.vs[F.vi];
+      l1=editorLine(vn+'?',S.toks,S.cur,true);
+      l2=numHTML(fmtNum(S.fv[vn]||0));break;}
+    case 'fmlares':{const F=S.fm,fm=FMLAS[F.idx];
+      l1=textLine(`${String(F.idx+1).padStart(2,'0')}:${fm.nm}`);
+      l2=`<span class="lab">${esc(fm.out[F.ri])}=</span>`+numHTML(fmtNum(F.res[F.ri]));
+      if(F.res.length>1){on.add(F.ri?'UP':'DN');}break;}
+    case 'prgsel':{const P=S.ps;const t={EDIT:'EDIT Program',RUN:'RUN Program',DEL:'DELETE Program'}[P.act];
+      l1=textLine(t);
+      const nums=[1,2,3,4].map(k=>S.progs[k-1]?`<span class="inv">${k}</span>`:`<span>${k}</span>`).join('');
+      l2=`<span class="smalltxt">P-${nums}&nbsp;${680-progBytes()}</span>`;modeTag='PRGM';break;}
+    case 'prgedit':
+      l1=editorLine('',S.toks,S.cur,true);l2=`<span>${String(S.toks.length).padStart(3,'0')}</span>`;break;
+    case 'runprompt':{const p=S.run.pending;l1=editorLine(p.v+'?',S.toks,S.cur,true);
+      const vv=S.vars[p.v];l2=S.run.mode==='BASE'?`<span>${esc(fmtBase(vv.re,S.base))}</span>`:numHTML(fmtNum(vv.re));break;}
+    case 'runpause':{const f=fmtView(makeView(S.ans,S.run?S.run.mode:m));l1='';l2=f.html;on.add('DISP');break;}
+    case 'running': l1='';l2='';break;
+  }
+  if(S.screen==='prgedit'||S.screen==='prgsel') modeTag=S.pe?('PRGM '+(S.pe.idx+1)):'PRGM';
+  elInd.innerHTML=IND.map(([k,lab])=>{
+    if(k==='sp') return '<span class="sp"></span>';
+    if(k==='MODE') return `<i class="md ${modeTag?'on':''}">${esc(modeTag||'-')}</i>`;
+    if(k==='ANG_U') return `<i class="${angTag?'on':''}">${angTag||'D'}</i>`;
+    return `<i class="${on.has(k)?'on':''}">${esc(lab)}</i>`;
+  }).join('');
+  elL1.innerHTML=l1;elL2.innerHTML=l2;
+  fitL2();
+  updateBodyClass();
+  const tip=document.getElementById('prgTip');if(tip) tip.hidden=!(S.on&&S.mode==='PRGM');
+}
+function fitL2(){
+  elL2.style.fontSize='';
+  const kids=[...elL2.children].filter(c=>!c.classList.contains('lab'));
+  if(!kids.length) return;
+  const w=kids.reduce((a,c)=>a+c.offsetWidth,0)+8*(kids.length-1);
+  const avail=elL2.clientWidth;
+  if(w>avail&&avail>0) elL2.style.fontSize=`calc(var(--u)*${(11.5*avail/w*0.96).toFixed(2)})`;
+}
+function setBinWidth(n){
+  BW.BIN=n;
+  document.querySelectorAll('[data-bw]').forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.bw===n)));
+  try{localStorage.setItem('fx50bw',String(n));}catch(e){}
+  if(S.screen==='result'&&S.view&&S.view.mode==='BASE'&&S.view.base==='BIN'){try{checkBase(S.view.val.re,'BIN');S.lastBottom=fmtView(S.view).html;}catch(e){S.screen='input';S.toks=[];S.cur=0;S.lastBottom='0';}}
+  render();
+}
+document.querySelectorAll('[data-bw]').forEach(b=>b.addEventListener('click',()=>setBinWidth(+b.dataset.bw)));
+function updateBodyClass(){
+  const m=S.on?effMode():'';
+  elCalc.classList.toggle('mode-base',m==='BASE');
+  elCalc.classList.toggle('mode-stat',m==='SD'||m==='REG');
+  elCalc.classList.toggle('mode-cmplx',m==='CMPLX');
+  elCalc.classList.toggle('st-shift',!!S.shift);
+  elCalc.classList.toggle('st-alpha',!!(S.alpha||S.alphaOnce));
+}
+
+/* =====================================================================
+   Keyboard build
+   ===================================================================== */
+const KEYS={
+  SHIFT:{l:'SHIFT',c:'f sh tp'},ALPHA:{l:'ALPHA',c:'f al tp'},MODE:{l:'MODE',c:'f tp',sh:'SETUP'},ON:{l:'ON',c:'f tp'},
+  FMLA:{l:'FMLA',c:'f'},PROG:{l:'Prog',c:'f',sh:'EXIT'},INV:{l:'x<sup>−1</sup>',t:'x⁻¹',c:'f',sh:'x!',bs:'LOGIC'},FRAC:{l:'a<sup>b</sup>/<sub>c</sub>',t:'a b/c',c:'f',sh:'d/c'},
+  SQRT:{l:'√',t:'√',c:'f',sh:'∛'},SQR:{l:'x<sup>2</sup>',t:'x²',c:'f',sh:'x³',bs:'DEC'},POW:{l:'^',c:'f',sh:'ˣ√',bs:'HEX'},
+  LOG:{l:'log',c:'f',sh:'10ˣ',bs:'BIN'},LN:{l:'ln',c:'f',sh:'eˣ',al:'e',bs:'OCT'},
+  NEG:{l:'(−)',c:'f',cxs:'∠',al:'A',bs:'A'},DMS:{l:'°′″',c:'f',sh:'←',al:'B',bs:'B'},HYP:{l:'hyp',c:'f',al:'C',bs:'C'},
+  SIN:{l:'sin',c:'f',sh:'sin⁻¹',al:'D',bs:'D'},COS:{l:'cos',c:'f',sh:'cos⁻¹',bs:'E'},TAN:{l:'tan',c:'f',sh:'tan⁻¹',bs:'F'},
+  RCL:{l:'RCL',c:'f',sh:'STO'},ENG:{l:'ENG',c:'f',sh:'←',cx:'i'},LP:{l:'(',c:'f',sh:'%',cxs:'arg'},RP:{l:')',c:'f',sh:'Abs',al:'X'},
+  COMMA:{l:',',c:'f',cxs:'Conjg',sts:';',al:'Y'},MPLUS:{l:'M+',c:'f',sh:'M−',sts:'CL',al:'M',st:'DT'},
+  D7:{l:'7',c:'n',sh:'CONST'},D8:{l:'8',c:'n'},D9:{l:'9',c:'n',sh:'CLR'},DEL:{l:'DEL',c:'d',sh:'INS'},AC:{l:'AC',c:'d',sh:'OFF'},
+  D4:{l:'4',c:'n'},D5:{l:'5',c:'n'},D6:{l:'6',c:'n'},MUL:{l:'×',c:'n op',sh:'nPr'},DIV:{l:'÷',c:'n op',sh:'nCr'},
+  D1:{l:'1',c:'n',sts:'S-SUM'},D2:{l:'2',c:'n',sts:'S-VAR'},D3:{l:'3',c:'n',sh:'P-CMD'},ADD:{l:'+',c:'n op',sh:'Pol(',cxs:'▸r∠θ'},SUB:{l:'−',c:'n op',sh:'Rec(',cxs:'▸a+bi'},
+  D0:{l:'0',c:'n',sh:'Rnd'},DOT:{l:'·',c:'n',sh:'Ran#'},EXP:{l:'EXP',c:'n sm',sh:'π'},ANS:{l:'Ans',c:'n sm',sh:'DRG▸'},EXE:{l:'EXE',c:'n sm',cxs:'Re⇔Im'},
+  UP:{l:'▲'},DOWN:{l:'▼'},LEFT:{l:'◀'},RIGHT:{l:'▶'}
+};
+function keyHTML(id){
+  const k=KEYS[id];
+  const top=`<div class="lt"><span>${k.sh?`<span class="s">${supHTML(k.sh)}</span>`:''}${k.cxs?` <span class="fr p">${esc(k.cxs)}</span>`:''}${k.sts?` <span class="fr b">${esc(k.sts)}</span>`:''}</span><span class="a">${k.al?esc(k.al):''}</span></div>`;
+  const hasBot=k.bs||k.st||k.cx;
+  const bot=hasBot||!/\bn\b|\bd\b/.test(k.c)?`<div class="lb">${k.bs?`<span class="g">${esc(k.bs)}</span>`:''}${k.st?`<span class="b">${esc(k.st)}</span>`:''}${k.cx?`<span class="p">${esc(k.cx)}</span>`:''}</div>`:'';
+  return `<div class="kw">${top}<button type="button" class="k ${k.c}" data-k="${id}" aria-label="${esc(k.t||k.l.replace(/<[^>]+>/g,''))}"><span class="kl">${k.l}</span></button>${bot}</div>`;
+}
+function buildKeys(){
+  const box=$('#keys');
+  let h='<div class="toprow">';
+  h+=keyHTML('SHIFT')+keyHTML('ALPHA');
+  h+=`<div class="pad"><span class="rp">REPLAY</span><button type="button" class="pu" data-k="UP" aria-label="Up">▲</button><button type="button" class="pd" data-k="DOWN" aria-label="Down">▼</button><button type="button" class="pl" data-k="LEFT" aria-label="Left">◀</button><button type="button" class="pr" data-k="RIGHT" aria-label="Right">▶</button></div>`;
+  h+=keyHTML('MODE')+keyHTML('ON')+keyHTML('FMLA')+keyHTML('PROG')+keyHTML('INV')+keyHTML('FRAC');
+  h+='</div>';
+  h+='<div class="grid5 fn">'+['SQRT','SQR','POW','LOG','LN'].map(keyHTML).join('')+'</div>';
+  h+='<div class="grid6">'+['NEG','DMS','HYP','SIN','COS','TAN','RCL','ENG','LP','RP','COMMA','MPLUS'].map(keyHTML).join('')+'</div>';
+  h+='<div class="grid5 num">'+['D7','D8','D9','DEL','AC','D4','D5','D6','MUL','DIV','D1','D2','D3','ADD','SUB','D0','DOT','EXP','ANS','EXE'].map(keyHTML).join('')+'</div>';
+  box.innerHTML=h;
+  // order: the pad occupies column 3 of both rows
+  const tr=box.querySelector('.toprow');const kids=[...tr.children];
+  const place=(el,c,r)=>{el.style.gridColumn=c;el.style.gridRow=r;};
+  place(kids[0],1,1);place(kids[1],2,1);place(kids[3],4,1);place(kids[4],5,1);
+  place(kids[5],1,2);place(kids[6],2,2);place(kids[7],4,2);place(kids[8],5,2);
+  box.addEventListener('pointerdown',e=>{const b=e.target.closest('[data-k]');if(!b) return;e.preventDefault();flash(b);press(b.dataset.k);});
+  box.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.dataset&&e.target.dataset.k){e.preventDefault();e.stopPropagation();press(e.target.dataset.k);}});
+}
+function flash(b){b.classList.add('pressed');setTimeout(()=>b.classList.remove('pressed'),120);
+  if(ptrSize){b.classList.add('hit');clearTimeout(b._hit);b._hit=setTimeout(()=>b.classList.remove('hit'),450);}}
+let ptrSize=0,lastPtr={x:0,y:0,t:0};const ptrEl=document.getElementById('ptr');let calloutEl=null,calloutT=null;
+function setPtr(n){ptrSize=n;document.body.classList.toggle('bigptr',n>0);document.documentElement.style.setProperty('--ps',n+'px');
+  document.documentElement.style.setProperty('--rs',Math.round(n*1.5)+'px');document.documentElement.style.setProperty('--cs',Math.round(Math.max(28,n*.45))+'px');
+  document.querySelectorAll('[data-ptr]').forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.ptr===n)));
+  if(!n) ptrEl.style.transform='translate(-9999px,-9999px)';
+  try{localStorage.setItem('fx50ptr',String(n));}catch(e){}}
+document.querySelectorAll('[data-ptr]').forEach(b=>b.addEventListener('click',()=>setPtr(+b.dataset.ptr)));
+document.addEventListener('pointermove',e=>{lastPtr={x:e.clientX,y:e.clientY,t:lastPtr.t};if(ptrSize) ptrEl.style.transform=`translate(${e.clientX-ptrSize*0.09}px,${e.clientY-ptrSize*0.06}px)`;},{passive:true});
+document.addEventListener('pointerdown',e=>{lastPtr={x:e.clientX,y:e.clientY,t:Date.now()};if(!ptrSize) return;
+  ptrEl.style.transform=`translate(${e.clientX-ptrSize*0.09}px,${e.clientY-ptrSize*0.06}px)`;ptrEl.classList.add('down');
+  const r=document.createElement('div');r.className='ripple';r.style.left=e.clientX+'px';r.style.top=e.clientY+'px';document.body.appendChild(r);setTimeout(()=>r.remove(),600);},true);
+document.addEventListener('pointerup',()=>ptrEl.classList.remove('down'),true);
+function showCallout(id,name,sub){
+  if(!ptrSize) return;
+  if(!calloutEl){calloutEl=document.createElement('div');calloutEl.className='callout';document.body.appendChild(calloutEl);}
+  calloutEl.innerHTML=supHTML(name)+(sub?`<em>${supHTML(sub)}</em>`:'');
+  let x,y;
+  if(Date.now()-lastPtr.t<400){x=lastPtr.x+ptrSize*0.55;y=lastPtr.y+ptrSize*0.75;}
+  else{const b=document.querySelector(`[data-k="${id}"]`);if(!b) return;const rc=b.getBoundingClientRect();x=rc.left;y=rc.bottom+8;}
+  calloutEl.style.opacity='1';calloutEl.style.left='0px';calloutEl.style.top='0px';
+  const w=calloutEl.offsetWidth,h=calloutEl.offsetHeight;
+  x=Math.max(8,Math.min(innerWidth-w-8,x));y=Math.max(8,Math.min(innerHeight-h-8,y));
+  calloutEl.style.left=x+'px';calloutEl.style.top=y+'px';
+  clearTimeout(calloutT);calloutT=setTimeout(()=>{if(calloutEl)calloutEl.style.opacity='0';},1100);
+}
+
+/* ---------- keystroke log (manual-style notation) ---------- */
+const logEl=$('#log');let logLines=[[]];
+function keyName(id){const k=KEYS[id];return k.t||k.l.replace(/<[^>]+>/g,'');}
+function subLabel(id,sh,al){
+  if(S.screen==='menu'&&S.menu&&DIG[id]&&!sh){
+    const M=S.menu;const d=+DIG[id];
+    const look=pg=>{const nums=M.nums?M.nums[pg]:M.pages[pg].map((_,k)=>k+1);const k=nums.indexOf(d);return k>=0?M.pages[pg][k]:null;};
+    let l=look(M.page);if(!l&&M.anyPage){for(let p=0;p<M.pages.length&&!l;p++) l=look(p);}
+    return l||'';
+  }
+  const k=KEYS[id];if(!k) return '';
+  const m=S.on?effMode():'COMP';
+  if(sh){
+    if(m==='CMPLX'&&k.cxs) return k.cxs;
+    if((m==='SD'||m==='REG')&&k.sts) return k.sts;
+    if(id==='HYP') return 'hyp⁻¹';
+    return k.sh||'';
+  }
+  if(al) return k.al||'';
+  if(m==='BASE'&&k.bs) return k.bs;
+  if((m==='SD'||m==='REG')&&k.st) return k.st;
+  if(m==='CMPLX'&&k.cx) return k.cx;
+  return '';
+}
+function logKey(id,sh,al){
+  if(!KEYS[id]) return;
+  const sub=(id==='SHIFT'||id==='ALPHA')?'':subLabel(id,sh,al);
+  logLines[logLines.length-1].push({id,name:keyName(id),sub});
+  showCallout(id,keyName(id),sub);
+  if(id==='EXE'||id==='AC') logLines.push([]);
+  if(logLines.length>60) logLines.shift();
+  drawLog();
+}
+function drawLog(){
+  const lines=logLines.filter(l=>l.length);
+  if(!lines.length){logEl.innerHTML='<div class="empty">Keys you press appear here.</div>';return;}
+  logEl.innerHTML=lines.map(l=>`<div class="logline">${l.map(c=>`<span class="chip ${c.id==='SHIFT'?'sh':c.id==='ALPHA'?'al':''}"><span>${supHTML(c.name)}</span>${c.sub?`<em>(${supHTML(c.sub)})</em>`:''}</span>`).join('')}</div>`).join('');
+  logEl.scrollTop=logEl.scrollHeight;
+}
+$('#clearLog').addEventListener('click',()=>{logLines=[[]];drawLog();});
+
+/* ---------- physical keyboard ---------- */
+const KB={'0':'D0','1':'D1','2':'D2','3':'D3','4':'D4','5':'D5','6':'D6','7':'D7','8':'D8','9':'D9','.':'DOT','+':'ADD','-':'SUB','*':'MUL','/':'DIV',
+  '^':'POW','(':'LP',')':'RP',',':'COMMA','Enter':'EXE','=':'EXE','Backspace':'DEL','Escape':'AC','Delete':'AC',
+  ArrowUp:'UP',ArrowDown:'DOWN',ArrowLeft:'LEFT',ArrowRight:'RIGHT',s:'SHIFT',a:'ALPHA',m:'MODE'};
+document.addEventListener('keydown',e=>{
+  if(e.ctrlKey||e.metaKey||e.altKey) return;
+  if(e.target.closest&&e.target.closest('button')&&(e.key==='Enter'||e.key===' ')) return;
+  const id=KB[e.key];if(!id) return;
+  e.preventDefault();
+  const b=document.querySelector(`[data-k="${id}"]`);if(b) flash(b);
+  press(id);
+});
+
+/* ---------- page controls ---------- */
+let zoom=1;try{const z=parseFloat(localStorage.getItem('fx50zoom'));if(z>0.5&&z<2.5) zoom=z;}catch(e){}
+function applyZoom(){document.documentElement.style.setProperty('--zoom',zoom);try{localStorage.setItem('fx50zoom',String(zoom));}catch(e){}}
+$('#zoomIn').addEventListener('click',()=>{zoom=Math.min(2.4,+(zoom+0.1).toFixed(2));applyZoom();});
+$('#zoomOut').addEventListener('click',()=>{zoom=Math.max(0.6,+(zoom-0.1).toFixed(2));applyZoom();});
+$('#fsBtn').addEventListener('click',()=>{try{if(document.fullscreenElement) document.exitFullscreen();else document.documentElement.requestFullscreen().catch(()=>{});}catch(e){}});
+$('#resetBtn').addEventListener('click',()=>{resetAll();logLines=[[]];drawLog();render();});
+$('#tipsBtn').addEventListener('click',e=>{const on=!document.body.classList.contains('hidetips');document.body.classList.toggle('hidetips',on);e.currentTarget.textContent=on?'Show tips':'Hide tips';e.currentTarget.setAttribute('aria-pressed',String(on));});
+try{const pz=parseInt(localStorage.getItem('fx50ptr'),10);if(pz>0) setPtr(pz);}catch(e){}
+try{const bw=parseInt(localStorage.getItem('fx50bw'),10);if([16,32].includes(bw)) setBinWidth(bw);}catch(e){}
+
+buildKeys();applyZoom();render();
+window.__fx={S,press};
+</script>
+
+</body>
+</html>
