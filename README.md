@@ -2,7 +2,7 @@
 
 A web simulator of the fx-50FH scientific calculator, built for classroom demos on a projector or smart TV.
 
-**Live site:** https://fx50fh.danfrey.com.hk/ (by Danfrey Education, Danfrey Company Limited). You can also download `index.html` and open it in a browser; it is a single file with no build step.
+**Live site:** https://fx50fh.danfrey.com.hk/ (by Danfrey Education, Danfrey Company Limited, https://www.danfrey.com.hk/). You can also download `index.html` and open it in a browser; it is a single file with no build step.
 
 ## Features
 
