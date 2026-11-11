@@ -67,7 +67,8 @@
   --font-head:"Space Grotesk",Inter,system-ui,sans-serif;
   --font-lcd:"Share Tech Mono",ui-monospace,"Cascadia Mono",Menlo,Consolas,monospace;
   --zoom:1;
-  --w:min(calc(100vw - 32px), calc(54vh * var(--zoom)));
+  --kx:1.3;
+  --w:min(calc((100vw - 32px) / var(--kx)), calc(51vh * var(--zoom)));
   --u:calc(var(--w) / 100);
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#10141a;--fg:#e4e8ee;--muted:#9aa5b3;--panel:#181e27;--line:#2a3340;--accent:#7aa7ff;color-scheme:dark}}
@@ -78,7 +79,7 @@ body{background:var(--bg);color:var(--fg);font-family:var(--font-ui);margin:0}
 .app{min-height:100%;display:flex;flex-wrap:wrap;gap:20px;justify-content:center;align-items:flex-start;padding-block:12px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 
 /* ---------- calculator body ---------- */
-.calc{width:var(--w);max-width:100%;background:linear-gradient(170deg,var(--body-a),var(--body-b));border:calc(var(--u)*1.1) solid #17191c;border-radius:calc(var(--u)*5) calc(var(--u)*5) calc(var(--u)*8) calc(var(--u)*8);padding:calc(var(--u)*4) calc(var(--u)*5) calc(var(--u)*6);box-shadow:0 10px 30px rgba(0,0,0,.35),inset 0 2px 0 rgba(255,255,255,.7),inset 0 -3px 6px rgba(0,0,0,.12);user-select:none;-webkit-user-select:none;touch-action:manipulation;flex:0 0 auto}
+.calc{width:calc(var(--w) * var(--kx));max-width:100%;background:linear-gradient(170deg,var(--body-a),var(--body-b));border:calc(var(--u)*1.1) solid #17191c;border-radius:calc(var(--u)*5) calc(var(--u)*5) calc(var(--u)*8) calc(var(--u)*8);padding:calc(var(--u)*4) calc(var(--u)*5) calc(var(--u)*6);box-shadow:0 10px 30px rgba(0,0,0,.35),inset 0 2px 0 rgba(255,255,255,.7),inset 0 -3px 6px rgba(0,0,0,.12);user-select:none;-webkit-user-select:none;touch-action:manipulation;flex:0 0 auto}
 .brand{display:flex;justify-content:space-between;align-items:flex-end;color:#3a3f46;margin-bottom:calc(var(--u)*.8)}
 .brand b{font-family:Georgia,"Times New Roman",serif;font-style:italic;font-weight:400;font-size:calc(var(--u)*5.2);letter-spacing:.01em;padding-left:calc(var(--u)*2)}
 .solar{width:calc(var(--u)*27);height:calc(var(--u)*7.5);border-radius:calc(var(--u)*.6);background:repeating-linear-gradient(90deg,#3a2b24 0 calc(var(--u)*6.5),#251a15 calc(var(--u)*6.5) calc(var(--u)*6.8));box-shadow:inset 0 0 0 calc(var(--u)*.5) #8d939b,inset 0 2px 6px rgba(0,0,0,.6)}
@@ -131,27 +132,27 @@ body{background:var(--bg);color:var(--fg);font-family:var(--font-ui);margin:0}
 .grid6.fn{margin-top:calc(var(--u)*1)}
 .grid5.num{margin-top:calc(var(--u)*2.2)}
 .kw{display:flex;flex-direction:column;align-items:stretch;min-width:0}
-.lt{display:flex;justify-content:space-between;align-items:flex-end;gap:2px;height:calc(var(--u)*3.8);font-size:calc(var(--u)*2.9);line-height:1.05;font-weight:600;white-space:nowrap;overflow:visible;padding:0 1px}
+.lt{display:flex;justify-content:space-between;align-items:flex-end;gap:2px;height:calc(var(--u)*4);font-size:calc(var(--u)*3.5);line-height:1.05;font-weight:600;white-space:nowrap;overflow:visible;padding:0 1px}
 .lt .s{color:var(--l-shift)}
 .lt .a{color:var(--l-alpha)}
 .lt .fr{border:1px solid currentColor;border-top:0;border-radius:0;padding:0 2px;color:var(--l-blue)}
-.lt.tl{justify-content:center;font-size:calc(var(--u)*3);letter-spacing:.02em}
+.lt.tl{justify-content:center;font-size:calc(var(--u)*3.6);letter-spacing:.02em}
 .lt.tl .d{color:var(--l-dark)}
 .lt.tl .s{margin-left:calc(var(--u)*1)}
 .lt .fr.p{border-color:var(--l-purple)}
 .lt .fr.b{border-color:var(--l-blue)}
-.lb{height:calc(var(--u)*3);font-size:calc(var(--u)*2.7);line-height:calc(var(--u)*3);text-align:center;font-weight:700;white-space:nowrap}
+.lb{height:calc(var(--u)*3.4);font-size:calc(var(--u)*3.2);line-height:calc(var(--u)*3.4);text-align:center;font-weight:700;white-space:nowrap}
 .lb .g{color:var(--l-green)} .lb .b{color:var(--l-blue)} .lb .p{color:var(--l-purple)}
 .lt .g{color:var(--l-green)} .lt .a.cxi{color:var(--l-blue)}
 .lb .fr{border:1px solid currentColor;border-top:0;padding:0 2px;color:var(--l-blue)}
 .k{font-family:var(--font-ui);border:0;border-radius:calc(var(--u)*1.6);cursor:pointer;font-weight:600;display:flex;align-items:center;justify-content:center;transition:transform .05s;position:relative}
 .k:focus-visible,.pad button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
-.k.f{height:calc(var(--u)*6.6);background:linear-gradient(#6a768c,var(--kfn));color:var(--kfn-t);font-size:calc(var(--u)*3.9);box-shadow:0 calc(var(--u)*.6) 0 #262c36;border-radius:calc(var(--u)*2.2)}
-.k.n{height:calc(var(--u)*8.2);background:linear-gradient(#3f4a5e,var(--knum));color:var(--knum-t);font-size:calc(var(--u)*6);box-shadow:0 calc(var(--u)*.7) 0 #0e1117;border-radius:calc(var(--u)*2.6)}
-.k.n.op{font-size:calc(var(--u)*5.6)}
-.k.n.sm{font-size:calc(var(--u)*4.3)}
-.k.d{height:calc(var(--u)*8.2);background:linear-gradient(#b43444,var(--kdel));color:var(--kdel-t);font-size:calc(var(--u)*4.6);box-shadow:0 calc(var(--u)*.7) 0 #4a0d14;border-radius:calc(var(--u)*2.6)}
-.k.tp{height:calc(var(--u)*5.6);background:linear-gradient(#4a4f57,var(--kshift));border-radius:50%;box-shadow:0 calc(var(--u)*.6) 0 #000}
+.k.f{height:calc(var(--u)*7.4);background:linear-gradient(#6a768c,var(--kfn));color:var(--kfn-t);font-size:calc(var(--u)*5.2);box-shadow:0 calc(var(--u)*.6) 0 #262c36;border-radius:calc(var(--u)*2.2)}
+.k.n{height:calc(var(--u)*9);background:linear-gradient(#3f4a5e,var(--knum));color:var(--knum-t);font-size:calc(var(--u)*7.6);box-shadow:0 calc(var(--u)*.7) 0 #0e1117;border-radius:calc(var(--u)*2.6)}
+.k.n.op{font-size:calc(var(--u)*7.4)}
+.k.n.sm{font-size:calc(var(--u)*5.6)}
+.k.d{height:calc(var(--u)*9);background:linear-gradient(#b43444,var(--kdel));color:var(--kdel-t);font-size:calc(var(--u)*5.8);box-shadow:0 calc(var(--u)*.7) 0 #4a0d14;border-radius:calc(var(--u)*2.6)}
+.k.tp{height:calc(var(--u)*6.2);background:linear-gradient(#4a4f57,var(--kshift));border-radius:50%;box-shadow:0 calc(var(--u)*.6) 0 #000}
 .k.or{background:linear-gradient(#ff9440,var(--korange));color:#fff;box-shadow:0 calc(var(--u)*.6) 0 #8a3b06}
 .k:active,.k.pressed{transform:translateY(calc(var(--u)*.5));box-shadow:0 calc(var(--u)*.15) 0 #0e1117}
 .k.hit,.pad button.hit{outline:calc(var(--u)*.9) solid #ffd400;outline-offset:calc(var(--u)*.4);z-index:2}
@@ -172,6 +173,7 @@ body.bigptr,body.bigptr *{cursor:none!important}
 .ptrsel button[aria-pressed="true"]{background:var(--accent);color:#fff}
 .prgtip{margin-top:10px;padding:10px 12px;border-radius:8px;background:var(--bg);border:1px solid var(--accent);font-size:16px;line-height:1.45}
 .k .kl{display:inline-block;line-height:1;white-space:nowrap}
+.k .car{display:inline-block;font-size:2.7em;font-weight:500;transform:translateY(.3em);line-height:.5}
 .k sup{font-size:.6em;vertical-align:.7em;line-height:0;margin-left:1px}
 .k sub{font-size:.6em;vertical-align:-.25em;line-height:0}
 .lt sup,.chip sup,.menu sup{font-size:.68em;vertical-align:.55em;line-height:0}
@@ -257,11 +259,9 @@ body.bigptr,body.bigptr *{cursor:none!important}
     <div class="card tipcard">
       <div class="h2"><span>Label colours</span></div>
       <div class="legend">
-        <span><i class="dot" style="background:#e9b43c"></i>SHIFT functions</span>
-        <span><i class="dot" style="background:#d9534f"></i>ALPHA variables</span>
-        <span><i class="dot" style="background:#6db3ff"></i>SD / REG</span>
-        <span><i class="dot" style="background:#7fdc78"></i>BASE</span>
-        <span><i class="dot" style="background:#d0a2ff"></i>CMPLX</span>
+        <span><i class="dot" style="background:#b8520f"></i>SHIFT functions (orange)</span>
+        <span><i class="dot" style="background:#c3241f"></i>ALPHA variables (red)</span>
+        <span><i class="dot" style="background:#1f5cc0"></i>BASE, SD / REG and CMPLX functions (blue)</span>
       </div>
     </div>
     <div class="card tipcard">
@@ -1750,7 +1750,7 @@ function updateBodyClass(){
 const KEYS={
   SHIFT:{l:'SHIFT',c:'f sh tp',top:'<span class="s">SHIFT</span>'},ALPHA:{l:'ALPHA',c:'f al tp',top:'<span class="a">ALPHA</span>'},MODE:{l:'MODE',c:'f tp',sh:'SETUP',top:'<span class="d">MODE</span><span class="s">SETUP</span>'},ON:{l:'ON',c:'f tp',top:'<span class="d">ON</span>'},
   FMLA:{l:'FMLA',c:'f or'},PROG:{l:'Prog',c:'f or',sh:'EXIT'},CUBE:{l:'x<sup>3</sup>',t:'x³',c:'f',sh:'∛'},INV:{l:'x<sup>−1</sup>',t:'x⁻¹',c:'f',sh:'x!',bs:'LOGIC'},FRAC:{l:'a<sup>b</sup>/<sub>c</sub>',t:'a b/c',c:'f',sh:'d/c'},
-  SQRT:{l:'√',t:'√',c:'f'},SQR:{l:'x<sup>2</sup>',t:'x²',c:'f',bs:'DEC'},POW:{l:'^',c:'f',sh:'ˣ√',bs:'HEX'},
+  SQRT:{l:'√',t:'√',c:'f'},SQR:{l:'x<sup>2</sup>',t:'x²',c:'f',bs:'DEC'},POW:{l:'<span class="car">^</span>',t:'^',c:'f',sh:'ˣ√',bs:'HEX'},
   LOG:{l:'log',c:'f',sh:'10ˣ',bs:'BIN'},LN:{l:'ln',c:'f',sh:'eˣ',al:'e',bs:'OCT'},
   NEG:{l:'(−)',c:'f',cxs:'∠',al:'A',bs:'A'},DMS:{l:'°′″',c:'f',sh:'←',al:'B',bs:'B'},HYP:{l:'hyp',c:'f',al:'C',bs:'C'},
   SIN:{l:'sin',c:'f',sh:'sin⁻¹',al:'D',bs:'D'},COS:{l:'cos',c:'f',sh:'cos⁻¹',bs:'E'},TAN:{l:'tan',c:'f',sh:'tan⁻¹',bs:'F'},
