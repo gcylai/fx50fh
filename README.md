@@ -2,7 +2,7 @@
 
 A web simulator of the fx-50FH scientific calculator, built for classroom demos on a projector or smart TV.
 
-**Open it:** download `index.html` and open it in a browser. It is a single file with no build step. If GitHub Pages is turned on for this repository, it can also be opened from the Pages URL.
+**Live site:** https://fx50fh.danfrey.com.hk/ (by Danfrey Education, Danfrey Company Limited). You can also download `index.html` and open it in a browser; it is a single file with no build step.
 
 ## Features
 

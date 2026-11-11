@@ -3,8 +3,53 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>fx-50FH Simulator</title>
-<meta name="claude:viewport-fit-sides" content="cover">
+<title>fx-50FH Calculator Simulator | Danfrey Education</title>
+<meta name="description" content="Free online fx-50FH scientific calculator simulator for classroom teaching and projector demonstrations, by Danfrey Education (Danfrey Company Limited). Supports COMP, CMPLX, BASE, SD, REG and program modes.">
+<meta name="keywords" content="Danfrey, Danfrey Company Limited, Danfrey Education, Danfrey Technology, fx-50FH, fx-50FH simulator, fx-50FH emulator, scientific calculator simulator, online calculator, HKDSE calculator, calculator teaching tool, base-n conversion, two's complement">
+<meta name="author" content="Danfrey Education">
+<meta name="publisher" content="Danfrey Company Limited">
+<meta name="application-name" content="fx-50FH Simulator by Danfrey">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<meta name="theme-color" content="#1f2633">
+<link rel="canonical" href="https://fx50fh.danfrey.com.hk/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Danfrey Education">
+<meta property="og:title" content="fx-50FH Calculator Simulator | Danfrey Education">
+<meta property="og:description" content="Free online fx-50FH scientific calculator simulator for classroom teaching and projector demonstrations, by Danfrey Education.">
+<meta property="og:url" content="https://fx50fh.danfrey.com.hk/">
+<meta property="og:locale" content="en_HK">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="fx-50FH Calculator Simulator | Danfrey Education">
+<meta name="twitter:description" content="Free online fx-50FH scientific calculator simulator for classroom teaching, by Danfrey Education.">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": "https://fx50fh.danfrey.com.hk/#org",
+      "name": "Danfrey Company Limited",
+      "alternateName": ["Danfrey", "Danfrey Education", "Danfrey Technology"],
+      "url": "https://danfrey.com.hk/"
+    },
+    {
+      "@type": "WebApplication",
+      "@id": "https://fx50fh.danfrey.com.hk/#app",
+      "name": "fx-50FH Calculator Simulator",
+      "url": "https://fx50fh.danfrey.com.hk/",
+      "description": "Free online fx-50FH scientific calculator simulator for classroom teaching and projector demonstrations.",
+      "applicationCategory": "EducationalApplication",
+      "operatingSystem": "Any (web browser)",
+      "inLanguage": "en",
+      "isAccessibleForFree": true,
+      "offers": {"@type": "Offer", "price": "0", "priceCurrency": "HKD"},
+      "keywords": "Danfrey, Danfrey Company Limited, Danfrey Education, Danfrey Technology, fx-50FH simulator",
+      "author": {"@id": "https://fx50fh.danfrey.com.hk/#org"},
+      "publisher": {"@id": "https://fx50fh.danfrey.com.hk/#org"}
+    }
+  ]
+}
+</script>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap">
 </head>
 <body>
@@ -133,6 +178,8 @@ body.bigptr,body.bigptr *{cursor:none!important}
 /* ---------- side panel ---------- */
 .side{flex:1 1 320px;max-width:520px;min-width:0;display:flex;flex-direction:column;gap:14px}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.side .by{margin:0 0 8px;font-size:14px;color:var(--muted)}
+.side .by a{color:inherit}
 .side h1{font-family:var(--font-head);font-size:28px;margin:0 0 4px;text-wrap:balance}
 .side p{margin:0;color:var(--muted);font-size:17px;line-height:1.5}
 .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
@@ -170,6 +217,7 @@ body.bigptr,body.bigptr *{cursor:none!important}
   <div class="side">
     <div class="card">
       <h1>fx-50FH simulator</h1>
+      <p class="by">by <a href="https://danfrey.com.hk/">Danfrey Education</a> · Danfrey Company Limited</p>
       <p>Press keys on screen or use your keyboard. Every keystroke is logged below in the same notation as the user's guide, so the class can follow along.</p>
       <div class="row" style="margin-top:12px">
         <button class="btn" id="zoomOut" type="button" aria-label="Make calculator smaller">− Size</button>
